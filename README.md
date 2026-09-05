@@ -35,19 +35,4 @@ O projeto opera como uma *software house* acadêmica, cobrindo todas as etapas d
 
 ---
 
-##  Estrutura do Repositório
 
-```text
-carcassonne-project/
-├── .gitignore              # Arquivos e pastas ignorados pelo Git
-├── README.md               # Documentação principal do projeto
-├── assets/                 # Recursos visuais (sprites de tiles, meeples, sons)
-├── docs/                   # Documentação do projeto e apresentações
-│   ├── apresentacao-1/     # Escopo, Requisitos, Diagrama de Classes v1, Mockups
-│   └── apresentacao-2/     # Padrões GRASP/GoF, Diagramas de Sequência, Relatório Final
-├── src/                    # Código-fonte da aplicação
-│   ├── core/               # Regras do jogo (Tabuleiro, Tile, Meeple, Pontuação)
-│   ├── ai/                 # Módulo de Inteligência Artificial (Estratégias)
-│   ├── ui/                 # Interface Gráfica e Interação com Usuário
-│   └── main.py             # Ponto de entrada da aplicação
-└── tests/                  # Testes unitários (validações de bordas e regras)
