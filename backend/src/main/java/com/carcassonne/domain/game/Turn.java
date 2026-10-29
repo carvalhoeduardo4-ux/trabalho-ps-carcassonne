@@ -1,0 +1,43 @@
+package com.carcassonne.domain.game;
+
+import com.carcassonne.domain.board.PlacedTile;
+import com.carcassonne.domain.tile.Tile;
+import lombok.AccessLevel;
+import lombok.Setter;
+
+import java.util.Optional;
+
+/** State pattern - Context. */
+public class Turn {
+
+    @Setter(AccessLevel.PACKAGE)
+    private TurnState state = new DrawTileState();
+    @Setter(AccessLevel.PACKAGE)
+    private Tile drawnTile;          // 0..1
+    @Setter(AccessLevel.PACKAGE)
+    private PlacedTile placedTile;   // 0..1
+
+    public void recordDrawnTile(Tile tile) {
+        state.recordDrawnTile(this, tile);
+    }
+
+    public void recordPlacedTile(PlacedTile tile) {
+        state.recordPlacedTile(this, tile);
+    }
+
+    public void resolveMeeple() {
+        state.resolveMeeple(this);
+    }
+
+    public void reset() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public Optional<Tile> drawnTile() {
+        return Optional.ofNullable(drawnTile);
+    }
+
+    public Optional<PlacedTile> placedTile() {
+        return Optional.ofNullable(placedTile);
+    }
+}
