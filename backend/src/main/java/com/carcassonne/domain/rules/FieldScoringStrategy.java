@@ -6,10 +6,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class FieldScoringStrategy implements FeatureScoringStrategy {
 
     private final FeatureConnectivity connectivity;
+
+    public FieldScoringStrategy() {
+        this(null);
+    }
+
+    public FieldScoringStrategy(FeatureConnectivity connectivity) {
+        this.connectivity = connectivity;
+    }
 
     @Override
     public int completedScore(Board board, FeatureRegion region) {

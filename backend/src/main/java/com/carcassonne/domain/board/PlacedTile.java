@@ -5,17 +5,34 @@ import com.carcassonne.domain.tile.EdgeLane;
 import com.carcassonne.domain.tile.Rotation;
 import com.carcassonne.domain.tile.Tile;
 import com.carcassonne.domain.tile.TileFeature;
-import lombok.Value;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /** Imutável. */
-@Value
 public class PlacedTile {
 
-    Tile tile;
-    Position position;
-    Rotation rotation;
+    private final Tile tile;
+    private final Position position;
+    private final Rotation rotation;
+
+    public PlacedTile(Tile tile, Position position, Rotation rotation) {
+        this.tile = tile;
+        this.position = position;
+        this.rotation = rotation;
+    }
+
+    public Tile getTile() {
+        return tile;
+    }
+
+    public Position getPosition() {
+        return position;
+    }
+
+    public Rotation getRotation() {
+        return rotation;
+    }
 
     public TileFeature feature(int featureId) {
         throw new UnsupportedOperationException("Not implemented");
@@ -23,5 +40,23 @@ public class PlacedTile {
 
     public Optional<TileFeature> featureAt(Direction side, EdgeLane lane) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PlacedTile that = (PlacedTile) o;
+        return Objects.equals(tile, that.tile) && Objects.equals(position, that.position) && rotation == that.rotation;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(tile, position, rotation);
+    }
+
+    @Override
+    public String toString() {
+        return "PlacedTile(pos=" + position + ", rot=" + rotation + ")";
     }
 }

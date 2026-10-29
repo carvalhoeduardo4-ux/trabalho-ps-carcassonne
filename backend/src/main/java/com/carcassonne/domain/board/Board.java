@@ -8,17 +8,24 @@ import java.util.Set;
 
 import com.carcassonne.domain.tile.Direction;
 
+import java.util.Collections;
+
 /** GRASP Information Expert. */
 public class Board {
 
     private final List<PlacedTile> tiles = new ArrayList<>();
 
     public boolean isOccupied(Position position) {
-        throw new UnsupportedOperationException("Not implemented");
+        return tileAt(position).isPresent();
     }
 
     public Optional<PlacedTile> tileAt(Position position) {
-        throw new UnsupportedOperationException("Not implemented");
+        if (position == null) {
+            return Optional.empty();
+        }
+        return tiles.stream()
+                .filter(t -> t.getPosition().equals(position))
+                .findFirst();
     }
 
     public Map<Direction, PlacedTile> neighbors(Position position) {
@@ -34,6 +41,13 @@ public class Board {
     }
 
     public void place(PlacedTile tile) {
-        throw new UnsupportedOperationException("Not implemented");
+        if (tile == null) {
+            throw new IllegalArgumentException("Peça posicionada não pode ser nula");
+        }
+        this.tiles.add(tile);
+    }
+
+    public List<PlacedTile> getTiles() {
+        return Collections.unmodifiableList(tiles);
     }
 }

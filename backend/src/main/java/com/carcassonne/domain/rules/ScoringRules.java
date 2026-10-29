@@ -10,11 +10,19 @@ import java.util.List;
 
 /** Pure Fabrication. */
 @Component
-@RequiredArgsConstructor
 public class ScoringRules {
 
     private final FeatureConnectivity connectivity;
     private final List<FeatureScoringStrategy> strategies;
+
+    public ScoringRules() {
+        this(null, List.of());
+    }
+
+    public ScoringRules(FeatureConnectivity connectivity, List<FeatureScoringStrategy> strategies) {
+        this.connectivity = connectivity;
+        this.strategies = strategies != null ? strategies : List.of();
+    }
 
     public List<ScoreAward> completedAwards(Game game, PlacedTile placedTile) {
         throw new UnsupportedOperationException("Not implemented");

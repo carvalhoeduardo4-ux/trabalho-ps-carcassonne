@@ -3,24 +3,43 @@ package com.carcassonne.domain.tile;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.Collections;
+import java.util.NoSuchElementException;
+
 /** GRASP Information Expert. */
 public class TileDeck {
 
     private final List<Tile> remaining = new ArrayList<>();
 
+    public TileDeck() {
+    }
+
+    public TileDeck(List<Tile> tiles) {
+        if (tiles != null) {
+            this.remaining.addAll(tiles);
+        }
+    }
+
     public void shuffle() {
-        throw new UnsupportedOperationException("Not implemented");
+        Collections.shuffle(remaining);
     }
 
     public Tile draw() {
-        throw new UnsupportedOperationException("Not implemented");
+        if (remaining.isEmpty()) {
+            throw new NoSuchElementException("Monte de peças está vazio");
+        }
+        return remaining.remove(0);
     }
 
     public boolean isEmpty() {
-        throw new UnsupportedOperationException("Not implemented");
+        return remaining.isEmpty();
     }
 
     public int remaining() {
-        throw new UnsupportedOperationException("Not implemented");
+        return remaining.size();
+    }
+
+    public List<Tile> getRemainingTiles() {
+        return Collections.unmodifiableList(remaining);
     }
 }

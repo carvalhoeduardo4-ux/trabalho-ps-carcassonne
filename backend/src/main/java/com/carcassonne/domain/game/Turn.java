@@ -30,8 +30,15 @@ public class Turn {
     }
 
     public void reset() {
-        throw new UnsupportedOperationException("Not implemented");
+        this.state = new DrawTileState();
+        this.drawnTile = null;
+        this.placedTile = null;
     }
+
+    public TurnState getState() {
+        return state;
+    }
+
 
     public Optional<Tile> drawnTile() {
         return Optional.ofNullable(drawnTile);

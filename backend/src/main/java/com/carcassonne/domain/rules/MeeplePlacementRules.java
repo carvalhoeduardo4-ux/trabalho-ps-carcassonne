@@ -9,10 +9,17 @@ import java.util.List;
 
 /** Pure Fabrication. */
 @Component
-@RequiredArgsConstructor
 public class MeeplePlacementRules {
 
     private final FeatureConnectivity connectivity;
+
+    public MeeplePlacementRules() {
+        this(null);
+    }
+
+    public MeeplePlacementRules(FeatureConnectivity connectivity) {
+        this.connectivity = connectivity;
+    }
 
     public boolean canPlace(Game game, FeatureRef feature) {
         throw new UnsupportedOperationException("Not implemented");
