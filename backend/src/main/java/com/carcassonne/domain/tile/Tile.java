@@ -33,7 +33,7 @@ public class Tile {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public Optional<TileFeature> featureAt(Direction side, EdgeLane lane, Rotation rotation) {
+    public Optional<TileFeature> featureAt(Direction side, EdgeLane lane) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

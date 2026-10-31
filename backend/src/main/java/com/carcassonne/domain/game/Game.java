@@ -8,6 +8,10 @@ import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.board.Position;
 import com.carcassonne.domain.player.MeeplePlacement;
 import com.carcassonne.domain.player.Player;
+import com.carcassonne.domain.rules.MeeplePlacementRules;
+import com.carcassonne.domain.rules.ScoreAward;
+import com.carcassonne.domain.rules.ScoringRules;
+import com.carcassonne.domain.rules.TilePlacementRules;
 import com.carcassonne.domain.tile.Rotation;
 import com.carcassonne.domain.tile.StandardTiles;
 import com.carcassonne.domain.tile.Tile;
@@ -30,6 +34,9 @@ public class Game {
     private final List<Player> players;      // 2..5
     private final Turn turn;
     private final List<MeeplePlacement> meeples = new ArrayList<>();
+    private final TilePlacementRules tileRules = new TilePlacementRules();
+    private final MeeplePlacementRules meepleRules = new MeeplePlacementRules();
+    private final ScoringRules scoringRules = new ScoringRules();
 
     private int currentPlayerIndex;
     private GameStatus status = GameStatus.ACTIVE;
@@ -119,6 +126,14 @@ public class Game {
         return INITIAL_MEEPLES_PER_PLAYER - (int) placed;
     }
 
+    public List<Placement> legalPlacements() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public List<FeatureRef> legalMeepleFeatures() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     public Tile drawTile() {
         throw new UnsupportedOperationException("Not implemented");
     }
@@ -139,7 +154,15 @@ public class Game {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public void applyAwards(List<ScoreAward> awards) {
+    public void scoreCompletedFeatures() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public void scoreEndGame() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    private void applyAwards(List<ScoreAward> awards) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

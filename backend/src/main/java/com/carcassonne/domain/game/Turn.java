@@ -17,6 +17,22 @@ public class Turn {
     @Setter(AccessLevel.PACKAGE)
     private PlacedTile placedTile;   // 0..1
 
+    public void requireDrawTile() {
+        state.requireDrawTile();
+    }
+
+    public void requirePlaceTile() {
+        state.requirePlaceTile();
+    }
+
+    public void requireMeepleDecision() {
+        state.requireMeepleDecision();
+    }
+
+    public void discardDrawnTile() {
+        state.discardDrawnTile(this);
+    }
+
     public void recordDrawnTile(Tile tile) {
         state.recordDrawnTile(this, tile);
     }

@@ -1,4 +1,4 @@
-package com.carcassonne.domain.game;
+package com.carcassonne.domain.rules;
 
 import com.carcassonne.domain.board.FeatureRegion;
 import com.carcassonne.domain.player.Player;

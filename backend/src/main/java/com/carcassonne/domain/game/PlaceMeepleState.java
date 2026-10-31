@@ -6,6 +6,26 @@ import com.carcassonne.domain.tile.Tile;
 public class PlaceMeepleState implements TurnState {
 
     @Override
+    public void requireDrawTile() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public void requirePlaceTile() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public void requireMeepleDecision() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public void discardDrawnTile(Turn turn) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
     public void recordDrawnTile(Turn turn, Tile tile) {
         throw new UnsupportedOperationException("Not implemented");
     }

@@ -1,7 +1,9 @@
 package com.carcassonne.domain.rules;
 
+import com.carcassonne.domain.board.Board;
 import com.carcassonne.domain.board.FeatureRef;
-import com.carcassonne.domain.game.Game;
+import com.carcassonne.domain.board.PlacedTile;
+import com.carcassonne.domain.player.MeeplePlacement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,11 +23,11 @@ public class MeeplePlacementRules {
         this.connectivity = connectivity;
     }
 
-    public boolean canPlace(Game game, FeatureRef feature) {
+    public boolean canPlace(Board board, List<MeeplePlacement> meeples, FeatureRef feature) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public List<FeatureRef> legalFeatures(Game game) {
+    public List<FeatureRef> legalFeatures(Board board, List<MeeplePlacement> meeples, PlacedTile placedTile) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }
