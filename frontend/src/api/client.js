@@ -8,7 +8,10 @@ async function request(path, options = {}) {
       ...options
     });
   } catch (e) {
-    throw new Error('Não foi possível conectar ao servidor (http://localhost:8080).');
+    // Erro de rede (servidor fora do ar): marcado para a interface diferenciar de erros da API
+    const err = new Error('Não foi possível conectar ao servidor do jogo.');
+    err.offline = true;
+    throw err;
   }
   const body = await response.json().catch(() => null);
   if (!response.ok) {
