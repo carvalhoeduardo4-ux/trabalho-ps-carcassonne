@@ -10,6 +10,14 @@ import com.carcassonne.domain.game.GameStatus;
 import com.carcassonne.domain.player.Player;
 import com.carcassonne.domain.player.PlayerColor;
 import com.carcassonne.domain.tile.Rotation;
+import com.carcassonne.domain.rules.CityScoringStrategy;
+import com.carcassonne.domain.rules.FeatureConnectivity;
+import com.carcassonne.domain.rules.FieldScoringStrategy;
+import com.carcassonne.domain.rules.MeeplePlacementRules;
+import com.carcassonne.domain.rules.MonasteryScoringStrategy;
+import com.carcassonne.domain.rules.RoadScoringStrategy;
+import com.carcassonne.domain.rules.ScoringRules;
+import com.carcassonne.domain.rules.TilePlacementRules;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,9 +30,29 @@ class GameInitializationTest {
 
     private GameEngine engine;
 
+    private GameEngine newEngine() {
+        FeatureConnectivity connectivity =
+                new FeatureConnectivity();
+
+        ScoringRules scoringRules =
+                new ScoringRules(
+                        connectivity,
+                        new RoadScoringStrategy(),
+                        new CityScoringStrategy(),
+                        new MonasteryScoringStrategy(),
+                        new FieldScoringStrategy(connectivity)
+                );
+
+        return new GameEngine(
+                new TilePlacementRules(),
+                new MeeplePlacementRules(connectivity),
+                scoringRules
+        );
+    }
+
     @BeforeEach
     void setUp() {
-        engine = new GameEngine();
+        engine = newEngine();
     }
 
     @Test
@@ -75,15 +103,23 @@ class GameInitializationTest {
         assertTrue(game.currentDrawnTile().isEmpty());
         assertTrue(game.currentPlacedTile().isEmpty());
     }
-
+    
     @Test
     @DisplayName("Suporta 2 a 5 jogadores com cores distintas")
     void testSupportedPlayerCounts() {
         for (int count = 2; count <= 5; count++) {
             List<PlayerSetup> setups = createSetups(count);
-            GameEngine currentEngine = new GameEngine();
-            assertDoesNotThrow(() -> currentEngine.startGame(setups));
-            assertEquals(count, currentEngine.getGame().getPlayers().size());
+
+            GameEngine currentEngine = newEngine();
+
+            assertDoesNotThrow(
+                    () -> currentEngine.startGame(setups)
+            );
+
+            assertEquals(
+                    count,
+                    currentEngine.getGame().getPlayers().size()
+            );
         }
     }
 
