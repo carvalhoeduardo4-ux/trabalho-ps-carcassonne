@@ -33,7 +33,7 @@ public final class StandardTiles {
                 new EdgeContact(Direction.SOUTH, EdgeLane.RIGHT)
             ))
         );
-        return new Tile(features, List.of());
+        return new Tile("START", features, List.of());
     }
 
     /**
@@ -44,7 +44,7 @@ public final class StandardTiles {
 
         // A: Mosteiro com estrada ao sul (2 peças)
         for (int i = 0; i < 2; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("A", List.of(
                 new TileFeature(1, FeatureType.MONASTERY, 0, List.of()),
                 new TileFeature(2, FeatureType.ROAD, 0, List.of(
                     new EdgeContact(Direction.SOUTH, EdgeLane.CENTER)
@@ -59,7 +59,7 @@ public final class StandardTiles {
 
         // B: Mosteiro isolado no campo (4 peças)
         for (int i = 0; i < 4; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("B", List.of(
                 new TileFeature(1, FeatureType.MONASTERY, 0, List.of()),
                 new TileFeature(2, FeatureType.FIELD, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
@@ -71,7 +71,7 @@ public final class StandardTiles {
         }
 
         // C: Cidade completa de 4 lados com escudo (1 peça)
-        tiles.add(new Tile(List.of(
+        tiles.add(new Tile("C", List.of(
             new TileFeature(1, FeatureType.CITY, 1, List.of(
                 new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                 new EdgeContact(Direction.EAST, EdgeLane.CENTER),
@@ -82,7 +82,7 @@ public final class StandardTiles {
 
         // D: Cidade ao norte com estrada leste-oeste (cópia de compra: 3 peças)
         for (int i = 0; i < 3; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("D", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
                 )),
@@ -98,7 +98,7 @@ public final class StandardTiles {
 
         // E: Cidade em 1 borda (norte) com campo nos demais lados (5 peças)
         for (int i = 0; i < 5; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("E", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
                 )),
@@ -112,7 +112,7 @@ public final class StandardTiles {
 
         // F: Cidade em lados opostos conectada com escudo (1 peça) e sem escudo (1 peça) = 2 peças
         for (int i = 0; i < 2; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("F", List.of(
                 new TileFeature(1, FeatureType.CITY, i == 0 ? 1 : 0, List.of(
                     new EdgeContact(Direction.EAST, EdgeLane.CENTER),
                     new EdgeContact(Direction.WEST, EdgeLane.CENTER)
@@ -125,7 +125,7 @@ public final class StandardTiles {
         }
 
         // G: Cidade em lados opostos conectada reta (1 peça)
-        tiles.add(new Tile(List.of(
+        tiles.add(new Tile("G", List.of(
             new TileFeature(1, FeatureType.CITY, 0, List.of(
                 new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                 new EdgeContact(Direction.SOUTH, EdgeLane.CENTER)
@@ -138,7 +138,7 @@ public final class StandardTiles {
 
         // H: Cidade em lados opostos separadas (3 peças)
         for (int i = 0; i < 3; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("H", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.EAST, EdgeLane.CENTER)
                 )),
@@ -154,7 +154,7 @@ public final class StandardTiles {
 
         // I: Cidade em 2 lados adjacentes separadas (2 peças)
         for (int i = 0; i < 2; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("I", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
                 )),
@@ -170,7 +170,7 @@ public final class StandardTiles {
 
         // J: Cidade em 1 borda com estrada em curva (3 peças)
         for (int i = 0; i < 3; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("J", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
                 )),
@@ -186,7 +186,7 @@ public final class StandardTiles {
 
         // K: Cidade em 1 borda com estrada em curva oposta (3 peças)
         for (int i = 0; i < 3; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("K", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
                 )),
@@ -202,7 +202,7 @@ public final class StandardTiles {
 
         // L: Cidade em 1 borda com bifurcação T de estrada (3 peças)
         for (int i = 0; i < 3; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("L", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
                 )),
@@ -220,7 +220,7 @@ public final class StandardTiles {
 
         // M: Cidade em canto (norte + leste) conectada com escudo (2 peças)
         for (int i = 0; i < 2; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("M", List.of(
                 new TileFeature(1, FeatureType.CITY, 1, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                     new EdgeContact(Direction.EAST, EdgeLane.CENTER)
@@ -234,7 +234,7 @@ public final class StandardTiles {
 
         // N: Cidade em canto (norte + leste) conectada sem escudo (3 peças)
         for (int i = 0; i < 3; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("N", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                     new EdgeContact(Direction.EAST, EdgeLane.CENTER)
@@ -248,7 +248,7 @@ public final class StandardTiles {
 
         // O: Cidade em canto conectada com estrada curva (2 peças)
         for (int i = 0; i < 2; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("O", List.of(
                 new TileFeature(1, FeatureType.CITY, 1, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                     new EdgeContact(Direction.EAST, EdgeLane.CENTER)
@@ -262,7 +262,7 @@ public final class StandardTiles {
 
         // P: Cidade em canto conectada com estrada curva sem escudo (3 peças)
         for (int i = 0; i < 3; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("P", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                     new EdgeContact(Direction.EAST, EdgeLane.CENTER)
@@ -275,7 +275,7 @@ public final class StandardTiles {
         }
 
         // Q: Cidade em 3 lados conectada com escudo (1 peça)
-        tiles.add(new Tile(List.of(
+        tiles.add(new Tile("Q", List.of(
             new TileFeature(1, FeatureType.CITY, 1, List.of(
                 new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                 new EdgeContact(Direction.EAST, EdgeLane.CENTER),
@@ -288,7 +288,7 @@ public final class StandardTiles {
 
         // R: Cidade em 3 lados conectada sem escudo (3 peças)
         for (int i = 0; i < 3; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("R", List.of(
                 new TileFeature(1, FeatureType.CITY, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                     new EdgeContact(Direction.EAST, EdgeLane.CENTER),
@@ -302,7 +302,7 @@ public final class StandardTiles {
 
         // S: Cidade em 3 lados conectada com estrada e escudo (2 peças)
         for (int i = 0; i < 2; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("S", List.of(
                 new TileFeature(1, FeatureType.CITY, 1, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                     new EdgeContact(Direction.EAST, EdgeLane.CENTER),
@@ -315,7 +315,7 @@ public final class StandardTiles {
         }
 
         // T: Cidade em 3 lados conectada com estrada sem escudo (1 peça)
-        tiles.add(new Tile(List.of(
+        tiles.add(new Tile("T", List.of(
             new TileFeature(1, FeatureType.CITY, 0, List.of(
                 new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                 new EdgeContact(Direction.EAST, EdgeLane.CENTER),
@@ -328,7 +328,7 @@ public final class StandardTiles {
 
         // U: Estrada reta (8 peças)
         for (int i = 0; i < 8; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("U", List.of(
                 new TileFeature(1, FeatureType.ROAD, 0, List.of(
                     new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
                     new EdgeContact(Direction.SOUTH, EdgeLane.CENTER)
@@ -342,7 +342,7 @@ public final class StandardTiles {
 
         // V: Curva de estrada (9 peças)
         for (int i = 0; i < 9; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("V", List.of(
                 new TileFeature(1, FeatureType.ROAD, 0, List.of(
                     new EdgeContact(Direction.SOUTH, EdgeLane.CENTER),
                     new EdgeContact(Direction.WEST, EdgeLane.CENTER)
@@ -356,7 +356,7 @@ public final class StandardTiles {
 
         // W: Bifurcação em T de estradas (4 peças)
         for (int i = 0; i < 4; i++) {
-            tiles.add(new Tile(List.of(
+            tiles.add(new Tile("W", List.of(
                 new TileFeature(1, FeatureType.ROAD, 0, List.of(
                     new EdgeContact(Direction.SOUTH, EdgeLane.CENTER)
                 )),
@@ -373,7 +373,7 @@ public final class StandardTiles {
         }
 
         // X: Cruzamento de 4 estradas (1 peça)
-        tiles.add(new Tile(List.of(
+        tiles.add(new Tile("X", List.of(
             new TileFeature(1, FeatureType.ROAD, 0, List.of(
                 new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
             )),

@@ -1,7 +1,7 @@
 import React from 'react';
 import { MeepleIcon } from './TileSvg.js';
 
-export function ScoreBoard({ players = [], currentPlayerIndex = 0, history = [] }) {
+export function ScoreBoard({ players = [], currentPlayerIndex = 0 }) {
   return React.createElement('div', { className: 'scoreboard-panel card' }, [
     React.createElement('div', { className: 'scoreboard-header' }, [
       React.createElement('h3', { className: 'panel-title' }, '🏆 Placar de Jogadores')
@@ -11,7 +11,7 @@ export function ScoreBoard({ players = [], currentPlayerIndex = 0, history = [] 
       players.map((p, idx) => {
         const isCurrent = idx === currentPlayerIndex;
         return React.createElement('div', {
-          key: p.id,
+          key: `${p.name}-${idx}`,
           className: `player-card ${isCurrent ? 'player-active' : ''}`,
           style: { borderLeftColor: p.color.hex }
         }, [
@@ -26,7 +26,7 @@ export function ScoreBoard({ players = [], currentPlayerIndex = 0, history = [] 
                 isCurrent ? React.createElement('span', { className: 'current-badge' }, 'Vez') : null
               ]),
               React.createElement('div', { className: 'player-subtext' }, [
-                React.createElement('span', { className: 'meeple-count' }, `👤 ${p.meeplesCount} meeples`)
+                React.createElement('span', { className: 'meeple-count' }, `👤 ${p.availableMeeples} meeples`)
               ])
             ])
           ]),
@@ -40,11 +40,9 @@ export function ScoreBoard({ players = [], currentPlayerIndex = 0, history = [] 
 
     React.createElement('div', { className: 'history-section' }, [
       React.createElement('h4', { className: 'history-title' }, '📜 Histórico da Partida'),
-      React.createElement('div', { className: 'history-list' }, 
-        history.slice(0, 15).map(item => 
-          React.createElement('div', { key: item.id, className: 'history-item' }, item.text)
-        )
-      )
+      React.createElement('div', { className: 'history-list' }, [
+        React.createElement('div', { key: 'empty', className: 'history-item' }, 'Histórico ainda não disponível.')
+      ])
     ])
   ]);
 }

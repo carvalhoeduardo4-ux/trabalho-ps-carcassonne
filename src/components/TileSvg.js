@@ -1,5 +1,5 @@
 import React from 'react';
-import { Direction, MeeplePosition, PLAYER_COLORS } from '../core/types.js';
+import { Direction, MeeplePosition } from '../ui/constants.js';
 
 /**
  * Coordenadas para renderizar os meeples em cada segmento (grid 100x100)

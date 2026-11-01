@@ -1,22 +1,51 @@
-import React, { useRef, useEffect } from 'react';
-import { getBoardBounds, coordsToKey } from '../core/board.js';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { TileSvg } from './TileSvg.js';
+import { toRenderTile, meepleSegment } from '../ui/tileAdapter.js';
 
-export function GameBoard({ 
-  board, 
-  validPlacements = [], 
-  onPlaceTile, 
-  currentTile, 
-  phase, 
-  players = [] 
+const keyOf = (x, y) => `${x},${y}`;
+
+/** Limites do tabuleiro esparso (coordenadas podem ser negativas), com margem. */
+function getBounds(board, margin = 1) {
+  if (board.length === 0) return { minX: -margin, maxX: margin, minY: -margin, maxY: margin };
+  const xs = board.map(t => t.x);
+  const ys = board.map(t => t.y);
+  return {
+    minX: Math.min(...xs) - margin,
+    maxX: Math.max(...xs) + margin,
+    minY: Math.min(...ys) - margin,
+    maxY: Math.max(...ys) + margin
+  };
+}
+
+export function GameBoard({
+  board = [],
+  meeples = [],
+  validPlacements = [],
+  onPlaceTile,
+  phase,
+  players = []
 }) {
   const boardRef = useRef(null);
-  const bounds = getBoardBounds(board, 1);
+  const bounds = getBounds(board, 1);
 
-  // Mapear posições válidas para busca rápida O(1)
-  const validMap = new Set(validPlacements.map(p => coordsToKey(p.x, p.y)));
+  // Peças indexadas por posição, já no formato de desenho (com meeples)
+  const tilesByKey = useMemo(() => {
+    const map = new Map();
+    board.forEach(t => {
+      const render = toRenderTile(t.features, t.rotation);
+      const tileMeeples = meeples
+        .filter(m => m.x === t.x && m.y === t.y)
+        .map(m => ({
+          segment: meepleSegment(t.features, m.featureId, t.rotation),
+          playerIndex: m.playerIndex
+        }));
+      map.set(keyOf(t.x, t.y), { ...render, x: t.x, y: t.y, meeples: tileMeeples });
+    });
+    return map;
+  }, [board, meeples]);
 
-  // Centralizar o tabuleiro na carga inicial ou quando solicitado
+  const validMap = new Set(validPlacements.map(p => keyOf(p.x, p.y)));
+
   const centerBoard = () => {
     if (boardRef.current) {
       const el = boardRef.current;
@@ -32,12 +61,12 @@ export function GameBoard({
   const tileSize = 100;
   const rows = [];
 
-  // Loop de Y (de cima para baixo: do maxY para minY)
+  // NORTH = y+1: desenha de cima para baixo (maxY -> minY)
   for (let y = bounds.maxY; y >= bounds.minY; y--) {
     const cells = [];
     for (let x = bounds.minX; x <= bounds.maxX; x++) {
-      const key = coordsToKey(x, y);
-      const placedTile = board[key];
+      const key = keyOf(x, y);
+      const placedTile = tilesByKey.get(key);
       const isValidSlot = phase === 'PLACE_TILE' && validMap.has(key);
 
       cells.push(
@@ -77,7 +106,7 @@ export function GameBoard({
   return React.createElement('div', { className: 'board-wrapper' }, [
     React.createElement('div', { className: 'board-header-bar' }, [
       React.createElement('div', { className: 'board-stats' }, [
-        React.createElement('span', { className: 'badge' }, `Peças no tabuleiro: ${Object.keys(board).length}`),
+        React.createElement('span', { className: 'badge' }, `Peças no tabuleiro: ${board.length}`),
         phase === 'PLACE_TILE' ? React.createElement('span', { className: 'badge badge-action' }, 
           `✨ ${validPlacements.length} posições válidas disponíveis`
         ) : null

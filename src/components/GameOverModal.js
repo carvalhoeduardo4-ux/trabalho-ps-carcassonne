@@ -24,7 +24,7 @@ export function GameOverModal({ players = [], onRestart }) {
         sortedPlayers.map((p, idx) => {
           const isWinner = idx === 0;
           return React.createElement('div', {
-            key: p.id,
+            key: `${p.name}-${idx}`,
             className: `podium-row ${isWinner ? 'winner-row' : ''}`
           }, [
             React.createElement('div', { className: 'podium-rank' }, 

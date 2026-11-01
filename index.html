@@ -4,16 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Carcassonne Digital — Jogo de Tabuleiro Hot-Seat Local</title>
-  <meta name="description" content="Implementação de Carcassonne em React para 2 a 5 jogadores no mesmo dispositivo com validação de regras de estradas, cidades e mosteiros.">
-  
+  <meta name="description" content="Implementação de Carcassonne para 2 a 5 jogadores no mesmo dispositivo, com regras processadas pelo backend.">
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- React 18 & ReactDOM UMD (compatível tanto com HTTP quanto com file://) -->
+  <!-- React 18 & ReactDOM UMD -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Os módulos importam 'react' normalmente; o import map aponta para o React global -->
+  <script type="importmap">
+    { "imports": { "react": "./src/react.js" } }
+  </script>
 
   <link rel="stylesheet" href="./src/style.css">
 </head>
@@ -21,26 +26,10 @@
   <div id="root"></div>
 
   <script type="module">
-    import React from './src/vendor/react-adapter.js';
-    import ReactDOM from './src/vendor/react-dom-adapter.js';
+    import React from 'react';
     import { App } from './src/App.js';
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(App));
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
   </script>
-
-  <!-- Fallback direto caso o navegador bloqueie ES modules em file:/// -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      // Se o root não foi montado após 300ms (ex: bloqueio de módulos locais no Chrome)
-      setTimeout(() => {
-        const rootEl = document.getElementById('root');
-        if (rootEl && !rootEl.hasChildNodes()) {
-          loadStandaloneApp();
-        }
-      }, 400);
-    });
-  </script>
-  <script src="./src/standalone.js"></script>
 </body>
 </html>

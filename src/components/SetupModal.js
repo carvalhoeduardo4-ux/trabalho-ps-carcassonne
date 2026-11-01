@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { PLAYER_COLORS } from '../core/types.js';
+import { PLAYER_COLORS } from '../ui/constants.js';
 import { MeepleIcon } from './TileSvg.js';
 
-export function SetupModal({ onStartGame }) {
+export function SetupModal({ onStartGame, onCancel }) {
   const [playerCount, setPlayerCount] = useState(2);
   const [playersConfig, setPlayersConfig] = useState([
-    { name: 'Jogador 1', colorId: 'red' },
-    { name: 'Jogador 2', colorId: 'blue' },
-    { name: 'Jogador 3', colorId: 'green' },
-    { name: 'Jogador 4', colorId: 'yellow' },
-    { name: 'Jogador 5', colorId: 'purple' }
+    { name: 'Jogador 1', colorId: 'RED' },
+    { name: 'Jogador 2', colorId: 'BLUE' },
+    { name: 'Jogador 3', colorId: 'GREEN' },
+    { name: 'Jogador 4', colorId: 'YELLOW' },
+    { name: 'Jogador 5', colorId: 'BLACK' }
   ]);
 
   const handleNameChange = (index, newName) => {
@@ -19,17 +19,26 @@ export function SetupModal({ onStartGame }) {
   };
 
   const handleStart = () => {
-    const selected = playersConfig.slice(0, playerCount);
+    const selected = playersConfig
+      .slice(0, playerCount)
+      .map(p => ({ name: p.name.trim() || 'Jogador', color: p.colorId }));
     onStartGame(selected);
   };
 
   return React.createElement('div', { className: 'modal-backdrop' }, [
     React.createElement('div', { className: 'modal-card setup-modal' }, [
       React.createElement('div', { className: 'modal-header' }, [
-        React.createElement('h2', { className: 'modal-title' }, '🏰 Carcassonne — Nova Partida'),
-        React.createElement('p', { className: 'modal-subtitle' }, 
-          'Configure os jogadores locais (2 a 5 participantes no mesmo dispositivo).'
-        )
+        React.createElement('div', null, [
+          React.createElement('h2', { className: 'modal-title' }, '🏰 Carcassonne — Nova Partida'),
+          React.createElement('p', { className: 'modal-subtitle' }, 
+            'Configure os jogadores locais (2 a 5 participantes no mesmo dispositivo).'
+          )
+        ]),
+        onCancel ? React.createElement('button', {
+          className: 'btn-close',
+          onClick: onCancel,
+          title: 'Fechar e voltar ao jogo'
+        }, '×') : null
       ]),
 
       React.createElement('div', { className: 'form-group' }, [
@@ -66,6 +75,10 @@ export function SetupModal({ onStartGame }) {
       ),
 
       React.createElement('div', { className: 'modal-actions' }, [
+        onCancel ? React.createElement('button', {
+          className: 'btn btn-outline',
+          onClick: onCancel
+        }, 'Cancelar') : null,
         React.createElement('button', {
           className: 'btn btn-primary btn-lg btn-start',
           onClick: handleStart
