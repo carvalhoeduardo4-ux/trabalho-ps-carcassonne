@@ -27,7 +27,17 @@ public class ScoringRules {
     private final Map<FeatureType, FeatureScoringStrategy> strategiesByType; // 1..*
 
     public ScoringRules() {
-        this(null, Map.of());
+        this(new FeatureConnectivity());
+    }
+
+    private ScoringRules(FeatureConnectivity connectivity) {
+        this(
+                connectivity,
+                new RoadScoringStrategy(),
+                new CityScoringStrategy(),
+                new MonasteryScoringStrategy(),
+                new FieldScoringStrategy(connectivity)
+        );
     }
 
     public ScoringRules(FeatureConnectivity connectivity, Map<FeatureType, FeatureScoringStrategy> strategiesByType) {

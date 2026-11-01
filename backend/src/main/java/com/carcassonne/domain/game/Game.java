@@ -18,6 +18,7 @@ import com.carcassonne.domain.tile.Rotation;
 import com.carcassonne.domain.tile.StandardTiles;
 import com.carcassonne.domain.tile.Tile;
 import com.carcassonne.domain.tile.TileDeck;
+import com.carcassonne.domain.rules.ScoringRules;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ public class Game {
 
     private final TilePlacementRules tileRules;
     private final MeeplePlacementRules meepleRules;
+    private final ScoringRules scoringRules;
 
     private int currentPlayerIndex;
     private GameStatus status = GameStatus.ACTIVE;
@@ -62,6 +64,26 @@ public class Game {
     }
 
     /**
+     * Cria e inicializa uma nova partida utilizando as implementações
+     * padrão da ScoringRules.
+     *
+     * Mantido principalmente por compatibilidade com testes e outros
+     * pontos que ainda constroem Game diretamente.
+     */
+    public Game(
+            List<Player> players,
+            TilePlacementRules tileRules,
+            MeeplePlacementRules meepleRules
+    ) {
+        this(
+                players,
+                tileRules,
+                meepleRules,
+                new ScoringRules()
+        );
+    }
+
+    /**
      * Cria e inicializa uma nova partida conforme o diagrama:
      *
      * 1. Valida os jogadores;
@@ -75,7 +97,8 @@ public class Game {
     public Game(
             List<Player> players,
             TilePlacementRules tileRules,
-            MeeplePlacementRules meepleRules
+            MeeplePlacementRules meepleRules,
+            ScoringRules scoringRules
     ) {
         validatePlayers(players);
 
@@ -89,8 +112,12 @@ public class Game {
                 "MeeplePlacementRules não pode ser nulo."
         );
 
-        this.players = new ArrayList<>(players);
+        this.scoringRules = Objects.requireNonNull(
+                scoringRules,
+                "ScoringRules não pode ser nulo."
+        );
 
+        this.players = new ArrayList<>(players);
         this.board = new Board();
 
         this.deck = new TileDeck(
@@ -111,6 +138,8 @@ public class Game {
         this.status = GameStatus.ACTIVE;
         this.currentPlayerIndex = 0;
     }
+
+
 
     /**
      * Construtor flexível com componentes injetados.
@@ -145,6 +174,26 @@ public class Game {
             TilePlacementRules tileRules,
             MeeplePlacementRules meepleRules
     ) {
+        this(
+                board,
+                deck,
+                players,
+                turn,
+                tileRules,
+                meepleRules,
+                new ScoringRules()
+        );
+    }
+
+    public Game(
+            Board board,
+            TileDeck deck,
+            List<Player> players,
+            Turn turn,
+            TilePlacementRules tileRules,
+            MeeplePlacementRules meepleRules,
+            ScoringRules scoringRules
+    ) {
         validatePlayers(players);
 
         this.tileRules = Objects.requireNonNull(
@@ -155,6 +204,11 @@ public class Game {
         this.meepleRules = Objects.requireNonNull(
                 meepleRules,
                 "MeeplePlacementRules não pode ser nulo."
+        );
+
+        this.scoringRules = Objects.requireNonNull(
+                scoringRules,
+                "ScoringRules não pode ser nulo."
         );
 
         this.players = new ArrayList<>(players);
@@ -454,6 +508,25 @@ public class Game {
     // SCORING
     // =====================================================
 
+    public void scoreCompletedFeatures() {
+        requireActive();
+
+        PlacedTile placedTile = currentPlacedTile()
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "Nenhuma peça foi posicionada neste turno."
+                        )
+                );
+
+        List<ScoreAward> awards = scoringRules.completedAwards(
+                board,
+                meeples,
+                placedTile
+        );
+
+        applyAwards(awards);
+    }
+
     /*
      * Mantido como placeholder neste PR.
      *
@@ -472,7 +545,7 @@ public class Game {
      * Continua público temporariamente neste PR.
      * Será tornado privado no PR2.
      */
-    public void applyAwards(List<ScoreAward> awards) {
+    private void applyAwards(List<ScoreAward> awards) {
         for (ScoreAward award : awards) {
             award.getRecipients()
                     .forEach(
@@ -481,9 +554,7 @@ public class Game {
                             )
                     );
 
-            removeMeeples(
-                    award.getRegion()
-            );
+            removeMeeples(award.getRegion());
         }
     }
 
