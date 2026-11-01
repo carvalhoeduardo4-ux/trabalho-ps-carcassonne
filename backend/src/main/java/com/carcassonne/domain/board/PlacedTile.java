@@ -34,12 +34,16 @@ public class PlacedTile {
         return rotation;
     }
 
+    public Optional<TileFeature> edgeFeature(Direction side) {
+        return tile.edgeFeature(side, rotation);
+    }
+
     public TileFeature feature(int featureId) {
-        throw new UnsupportedOperationException("Not implemented");
+        return tile.feature(featureId);
     }
 
     public Optional<TileFeature> featureAt(Direction side, EdgeLane lane) {
-        throw new UnsupportedOperationException("Not implemented");
+        return tile.featureAt(side, lane, rotation);
     }
 
     @Override
@@ -60,3 +64,4 @@ public class PlacedTile {
         return "PlacedTile(pos=" + position + ", rot=" + rotation + ")";
     }
 }
+

@@ -30,10 +30,32 @@ public class Tile {
 
 
     public TileFeature feature(int featureId) {
-        throw new UnsupportedOperationException("Not implemented");
+        return features.stream()
+                .filter(f -> f.getId() == featureId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Feature inexistente: " + featureId));
     }
 
     public Optional<TileFeature> featureAt(Direction side, EdgeLane lane) {
-        throw new UnsupportedOperationException("Not implemented");
+        return featureAt(side, lane, Rotation.DEG_0);
+    }
+
+    /** Feature que ocupa a borda indicada (lane CENTER, ou LEFT/RIGHT se não houver). */
+    public Optional<TileFeature> edgeFeature(Direction side, Rotation rotation) {
+        Optional<TileFeature> center = featureAt(side, EdgeLane.CENTER, rotation);
+        if (center.isPresent()) {
+            return center;
+        }
+        Optional<TileFeature> left = featureAt(side, EdgeLane.LEFT, rotation);
+        return left.isPresent() ? left : featureAt(side, EdgeLane.RIGHT, rotation);
+    }
+
+    /** Feature no lado/faixa observados após girar a peça no sentido horário. */
+    public Optional<TileFeature> featureAt(Direction side, EdgeLane lane, Rotation rotation) {
+        Direction localSide = side.rotateBack(rotation);
+        return features.stream()
+                .filter(f -> f.getEdgeContacts().stream()
+                        .anyMatch(c -> c.getSide() == localSide && c.getLane() == lane))
+                .findFirst();
     }
 }

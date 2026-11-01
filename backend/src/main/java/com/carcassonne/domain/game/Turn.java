@@ -16,6 +16,7 @@ public class Turn {
     private Tile drawnTile;          // 0..1
     @Setter(AccessLevel.PACKAGE)
     private PlacedTile placedTile;   // 0..1
+    private boolean meepleResolved;
 
     public void requireDrawTile() {
         state.requireDrawTile();
@@ -27,6 +28,14 @@ public class Turn {
 
     public void requireMeepleDecision() {
         state.requireMeepleDecision();
+        if (meepleResolved) {
+            throw new com.carcassonne.domain.exception.InvalidTurnPhaseException(
+                    "A decisão de meeple já foi tomada neste turno.");
+        }
+    }
+
+    void markMeepleResolved() {
+        this.meepleResolved = true;
     }
 
     public void discardDrawnTile() {
@@ -49,6 +58,7 @@ public class Turn {
         this.state = new DrawTileState();
         this.drawnTile = null;
         this.placedTile = null;
+        this.meepleResolved = false;
     }
 
     public TurnState getState() {

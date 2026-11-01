@@ -5,6 +5,10 @@ import com.carcassonne.application.port.in.PlayerSetup;
 import com.carcassonne.domain.board.FeatureRef;
 import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.game.Game;
+import com.carcassonne.domain.board.PlacedTile;
+import com.carcassonne.domain.exception.InvalidMeeplePlacementException;
+import com.carcassonne.domain.exception.InvalidPlacementException;
+import com.carcassonne.domain.rules.ScoreAward;
 import com.carcassonne.domain.player.Player;
 import com.carcassonne.domain.rules.MeeplePlacementRules;
 import com.carcassonne.domain.rules.ScoringRules;
@@ -54,41 +58,96 @@ public class GameEngine implements GameInputPort {
         this.game = new Game(domainPlayers);
     }
 
+    private Game requireGame() {
+        if (game == null) {
+            throw new IllegalStateException("Nenhuma partida iniciada.");
+        }
+        return game;
+    }
+
     @Override
     public Optional<Tile> drawTile() {
-        throw new UnsupportedOperationException("Not implemented");
+        Game g = requireGame();
+        boolean replacementRequired = true;
+        while (replacementRequired) {
+            if (!g.hasTilesRemaining()) {
+                replacementRequired = false;
+            } else {
+                Tile tile = g.drawTile();
+                if (tileRules.legalPlacements(g.getBoard(), tile).isEmpty()) {
+                    g.discardDrawnTile();
+                } else {
+                    replacementRequired = false;
+                }
+            }
+        }
+        Optional<Tile> drawn = g.currentDrawnTile();
+        if (drawn.isEmpty()) {
+            finishGame();
+        }
+        return drawn;
     }
 
     @Override
     public List<Placement> getLegalPlacements() {
-        throw new UnsupportedOperationException("Not implemented");
+        Game g = requireGame();
+        g.getTurn().requirePlaceTile();
+        Tile tile = g.currentDrawnTile().orElseThrow();
+        return tileRules.legalPlacements(g.getBoard(), tile);
     }
 
     @Override
     public void placeTile(Placement placement) {
-        throw new UnsupportedOperationException("Not implemented");
+        Game g = requireGame();
+        g.getTurn().requirePlaceTile();
+        Tile tile = g.currentDrawnTile().orElseThrow();
+        if (!tileRules.canPlace(g.getBoard(), tile, placement)) {
+            throw new InvalidPlacementException("Colocação de peça inválida: " + placement);
+        }
+        g.placeTile(placement);
     }
 
     @Override
     public List<FeatureRef> getLegalMeepleFeatures() {
-        throw new UnsupportedOperationException("Not implemented");
+        Game g = requireGame();
+        g.getTurn().requireMeepleDecision();
+        if (g.availableMeeples(g.currentPlayer()) <= 0) {
+            return List.of();
+        }
+        return meepleRules.legalFeatures(g.getBoard(), g.getMeeples(), g.currentPlacedTile().orElseThrow());
     }
 
     @Override
     public void placeMeeple(FeatureRef feature) {
-        throw new UnsupportedOperationException("Not implemented");
+        Game g = requireGame();
+        g.getTurn().requireMeepleDecision();
+        if (!meepleRules.canPlace(g.getBoard(), g.getMeeples(), feature)) {
+            throw new InvalidMeeplePlacementException("Colocação de meeple inválida: " + feature);
+        }
+        g.placeMeeple(feature);
+        resolveTurn();
     }
 
     @Override
     public void skipMeeple() {
-        throw new UnsupportedOperationException("Not implemented");
+        Game g = requireGame();
+        g.skipMeeple();
+        resolveTurn();
     }
 
     private void resolveTurn() {
-        throw new UnsupportedOperationException("Not implemented");
+        PlacedTile placed = game.currentPlacedTile().orElseThrow();
+        List<ScoreAward> awards = scoringRules.completedAwards(game.getBoard(), game.getMeeples(), placed);
+        game.applyAwards(awards);
+        if (game.hasTilesRemaining()) {
+            game.nextPlayer();
+        } else {
+            finishGame();
+        }
     }
 
     private void finishGame() {
-        throw new UnsupportedOperationException("Not implemented");
+        game.finish();
     }
 }
+

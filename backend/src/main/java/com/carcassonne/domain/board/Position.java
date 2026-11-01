@@ -19,6 +19,16 @@ public class Position {
         return y;
     }
 
+    /** Posição vizinha na direção dada (NORTH = y + 1). */
+    public Position neighbor(com.carcassonne.domain.tile.Direction direction) {
+        return switch (direction) {
+            case NORTH -> new Position(x, y + 1);
+            case SOUTH -> new Position(x, y - 1);
+            case EAST -> new Position(x + 1, y);
+            case WEST -> new Position(x - 1, y);
+        };
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -37,3 +47,4 @@ public class Position {
         return "(" + x + ", " + y + ")";
     }
 }
+

@@ -8,10 +8,9 @@ import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.board.Position;
 import com.carcassonne.domain.player.MeeplePlacement;
 import com.carcassonne.domain.player.Player;
-import com.carcassonne.domain.rules.MeeplePlacementRules;
+import com.carcassonne.domain.exception.InvalidMeeplePlacementException;
+import com.carcassonne.domain.exception.InvalidTurnPhaseException;
 import com.carcassonne.domain.rules.ScoreAward;
-import com.carcassonne.domain.rules.ScoringRules;
-import com.carcassonne.domain.rules.TilePlacementRules;
 import com.carcassonne.domain.tile.Rotation;
 import com.carcassonne.domain.tile.StandardTiles;
 import com.carcassonne.domain.tile.Tile;
@@ -34,9 +33,6 @@ public class Game {
     private final List<Player> players;      // 2..5
     private final Turn turn;
     private final List<MeeplePlacement> meeples = new ArrayList<>();
-    private final TilePlacementRules tileRules = new TilePlacementRules();
-    private final MeeplePlacementRules meepleRules = new MeeplePlacementRules();
-    private final ScoringRules scoringRules = new ScoringRules();
 
     private int currentPlayerIndex;
     private GameStatus status = GameStatus.ACTIVE;
@@ -126,48 +122,72 @@ public class Game {
         return INITIAL_MEEPLES_PER_PLAYER - (int) placed;
     }
 
-    public List<Placement> legalPlacements() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    public List<FeatureRef> legalMeepleFeatures() {
-        throw new UnsupportedOperationException("Not implemented");
+    private void requireActive() {
+        if (status != GameStatus.ACTIVE) {
+            throw new InvalidTurnPhaseException("A partida já foi encerrada.");
+        }
     }
 
     public Tile drawTile() {
-        throw new UnsupportedOperationException("Not implemented");
+        requireActive();
+        turn.requireDrawTile();
+        Tile tile = deck.draw();
+        turn.recordDrawnTile(tile);
+        return tile;
     }
 
     public void discardDrawnTile() {
-        throw new UnsupportedOperationException("Not implemented");
+        requireActive();
+        turn.discardDrawnTile();
     }
 
     public PlacedTile placeTile(Placement placement) {
-        throw new UnsupportedOperationException("Not implemented");
+        requireActive();
+        turn.requirePlaceTile();
+        Tile tile = currentDrawnTile()
+                .orElseThrow(() -> new IllegalStateException("Nenhuma peça sorteada."));
+        PlacedTile placed = new PlacedTile(tile, placement.getPosition(), placement.getRotation());
+        board.place(placed);
+        turn.recordPlacedTile(placed);
+        return placed;
     }
 
     public void placeMeeple(FeatureRef feature) {
-        throw new UnsupportedOperationException("Not implemented");
+        requireActive();
+        turn.requireMeepleDecision();
+        PlacedTile placed = currentPlacedTile()
+                .orElseThrow(() -> new IllegalStateException("Nenhuma peça posicionada."));
+        if (!placed.getPosition().equals(feature.getPosition())) {
+            throw new InvalidMeeplePlacementException("O meeple deve ficar na peça colocada neste turno.");
+        }
+        Player player = currentPlayer();
+        if (availableMeeples(player) <= 0) {
+            throw new InvalidMeeplePlacementException("O jogador não possui meeples disponíveis.");
+        }
+        meeples.add(new MeeplePlacement(player, feature));
+        turn.resolveMeeple();
     }
 
     public void skipMeeple() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    public void scoreCompletedFeatures() {
-        throw new UnsupportedOperationException("Not implemented");
+        requireActive();
+        turn.requireMeepleDecision();
+        turn.resolveMeeple();
     }
 
     public void scoreEndGame() {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    private void applyAwards(List<ScoreAward> awards) {
-        throw new UnsupportedOperationException("Not implemented");
+    /** Soma os pontos aos recebedores e devolve os meeples das regiões pontuadas. */
+    public void applyAwards(List<ScoreAward> awards) {
+        for (ScoreAward award : awards) {
+            award.getRecipients().forEach(p -> p.addScore(award.getPoints()));
+            removeMeeples(award.getRegion());
+        }
     }
 
     private void removeMeeples(FeatureRegion region) {
-        throw new UnsupportedOperationException("Not implemented");
+        meeples.removeIf(m -> region.contains(m.getFeature()));
     }
 
     public boolean hasTilesRemaining() {
@@ -175,7 +195,8 @@ public class Game {
     }
 
     public void nextPlayer() {
-        throw new UnsupportedOperationException("Not implemented");
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        turn.reset();
     }
 
     public void finish() {
