@@ -204,7 +204,14 @@ public class Game {
     }
 
     public List<Player> winners() {
-        throw new UnsupportedOperationException("Not implemented");
+    int highestScore = players.stream()
+            .mapToInt(Player::getScore)
+            .max()
+            .orElseThrow();
+
+    return players.stream()
+            .filter(player -> player.getScore() == highestScore)
+            .toList();
     }
 
     public Board getBoard() {
