@@ -1,0 +1,16 @@
+{
+  "name": "carcassonne-frontend",
+  "version": "0.0.1",
+  "description": "Front-end do Carcassonne Digital (hot-seat local). Aplicação estática em ES modules, sem etapa de build.",
+  "private": true,
+  "scripts": {
+    "start": "http-server  -p 3000 -c-1",
+    "serve": "npm start"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

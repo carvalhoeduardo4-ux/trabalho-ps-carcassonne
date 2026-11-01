@@ -10,7 +10,7 @@ const LANE_PRIORITY = ['CENTER', 'LEFT', 'RIGHT'];
 
 /**
  * Converte as features do backend (sem rotação) no formato que o TileSvg desenha:
- * { edges, cityGroups, hasMonastery } já considerando a rotação.
+ * { edges, cities, hasMonastery } já considerando a rotação.
  */
 export function toRenderTile(features = [], rotation = 'DEG_0') {
   const edges = {};
@@ -26,14 +26,17 @@ export function toRenderTile(features = [], rotation = 'DEG_0') {
     });
   });
 
-  const cityGroups = features
+  // Cada cidade da peça: lados que ela ocupa (já girados) e quantos brasões tem
+  const cities = features
     .filter(f => f.type === 'CITY')
-    .map(f => [...new Set(f.edgeContacts.map(c => rotateSide(c.side, rotation)))])
-    .sort((a, b) => b.length - a.length);
+    .map(f => ({
+      sides: [...new Set(f.edgeContacts.map(c => rotateSide(c.side, rotation)))],
+      shields: f.shieldCount || 0
+    }));
 
   return {
     edges,
-    cityGroups,
+    cities,
     hasMonastery: features.some(f => f.type === 'MONASTERY')
   };
 }

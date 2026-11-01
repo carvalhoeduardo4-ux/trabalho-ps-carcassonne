@@ -38,3 +38,21 @@ export const PLAYER_COLORS = [
 ];
 
 export const colorById = (id) => PLAYER_COLORS.find(c => c.id === id) || PLAYER_COLORS[0];
+
+/** Cores do desenho das peças, alinhadas ao tema medieval. */
+export const TILE_COLORS = {
+  field: '#8fae5a',
+  fieldBorder: 'rgba(0, 0, 0, 0.25)',
+  road: '#ece0c0',
+  roadEdge: '#8a7048',
+  roadLine: '#a08458',
+  city: '#b9773e',
+  cityWall: '#6b3f1d',
+  shield: '#1d4ed8',
+  monasteryWall: '#efe6d6',
+  monasteryOutline: '#5b4a3a',
+  monasteryRoof: '#a33a2a',
+  monasteryRoofEdge: '#6e2318',
+  monasteryCross: '#d4a017',
+  monasteryDoor: '#6b3f1d'
+};
