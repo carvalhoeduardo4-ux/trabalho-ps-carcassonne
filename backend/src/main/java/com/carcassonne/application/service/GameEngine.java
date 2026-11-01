@@ -5,8 +5,6 @@ import com.carcassonne.application.port.in.PlayerSetup;
 import com.carcassonne.domain.board.FeatureRef;
 import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.game.Game;
-import com.carcassonne.domain.board.PlacedTile;
-import com.carcassonne.domain.rules.ScoreAward;
 import com.carcassonne.domain.player.Player;
 import com.carcassonne.domain.rules.MeeplePlacementRules;
 import com.carcassonne.domain.rules.ScoringRules;
@@ -53,7 +51,8 @@ public class GameEngine implements GameInputPort {
         this.game = new Game(
                 domainPlayers,
                 tileRules,
-                meepleRules
+                meepleRules,
+                scoringRules
         );
     }
 
@@ -117,9 +116,8 @@ public class GameEngine implements GameInputPort {
     }
 
     private void resolveTurn() {
-        PlacedTile placed = game.currentPlacedTile().orElseThrow();
-        List<ScoreAward> awards = scoringRules.completedAwards(game.getBoard(), game.getMeeples(), placed);
-        game.applyAwards(awards);
+        game.scoreCompletedFeatures();
+
         if (game.hasTilesRemaining()) {
             game.nextPlayer();
         } else {
