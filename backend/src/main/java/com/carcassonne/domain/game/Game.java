@@ -6,11 +6,14 @@ import com.carcassonne.domain.board.FeatureRegion;
 import com.carcassonne.domain.board.PlacedTile;
 import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.board.Position;
+import com.carcassonne.domain.exception.InvalidMeeplePlacementException;
+import com.carcassonne.domain.exception.InvalidPlacementException;
+import com.carcassonne.domain.exception.InvalidTurnPhaseException;
 import com.carcassonne.domain.player.MeeplePlacement;
 import com.carcassonne.domain.player.Player;
-import com.carcassonne.domain.exception.InvalidMeeplePlacementException;
-import com.carcassonne.domain.exception.InvalidTurnPhaseException;
+import com.carcassonne.domain.rules.MeeplePlacementRules;
 import com.carcassonne.domain.rules.ScoreAward;
+import com.carcassonne.domain.rules.TilePlacementRules;
 import com.carcassonne.domain.tile.Rotation;
 import com.carcassonne.domain.tile.StandardTiles;
 import com.carcassonne.domain.tile.Tile;
@@ -20,9 +23,12 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
-/** Aggregate root / GRASP Information Expert. */
+/**
+ * Aggregate root / GRASP Information Expert.
+ */
 @Getter
 public class Game {
 
@@ -30,31 +36,76 @@ public class Game {
 
     private final Board board;
     private final TileDeck deck;
-    private final List<Player> players;      // 2..5
+    private final List<Player> players;
     private final Turn turn;
     private final List<MeeplePlacement> meeples = new ArrayList<>();
+
+    private final TilePlacementRules tileRules;
+    private final MeeplePlacementRules meepleRules;
 
     private int currentPlayerIndex;
     private GameStatus status = GameStatus.ACTIVE;
 
     /**
-     * Cria e inicializa uma nova partida conforme o diagrama de inicialização:
-     * 1. Valida invariantes (2 a 5 jogadores, cores distintas, 7 meeples por jogador);
-     * 2. Cria tabuleiro vazio;
-     * 3. Cria monte com as peças padrão de compra (71 peças) e embaralha;
-     * 4. Cria turno inicial (fase DrawTile);
-     * 5. Cria e posiciona a peça inicial no centro em (0, 0) com rotação DEG_0;
-     * 6. Define estado ativo e primeiro jogador (índice 0).
+     * Cria e inicializa uma nova partida utilizando as implementações
+     * padrão das regras.
+     *
+     * Mantido principalmente por compatibilidade com testes e outros
+     * pontos que ainda constroem Game diretamente.
      */
     public Game(List<Player> players) {
+        this(
+                players,
+                new TilePlacementRules(),
+                new MeeplePlacementRules()
+        );
+    }
+
+    /**
+     * Cria e inicializa uma nova partida conforme o diagrama:
+     *
+     * 1. Valida os jogadores;
+     * 2. Armazena as regras utilizadas pelo agregado;
+     * 3. Cria o tabuleiro;
+     * 4. Cria e embaralha o monte padrão;
+     * 5. Cria o turno inicial;
+     * 6. Posiciona a peça inicial em (0,0);
+     * 7. Define a partida como ativa.
+     */
+    public Game(
+            List<Player> players,
+            TilePlacementRules tileRules,
+            MeeplePlacementRules meepleRules
+    ) {
         validatePlayers(players);
+
+        this.tileRules = Objects.requireNonNull(
+                tileRules,
+                "TilePlacementRules não pode ser nulo."
+        );
+
+        this.meepleRules = Objects.requireNonNull(
+                meepleRules,
+                "MeeplePlacementRules não pode ser nulo."
+        );
+
         this.players = new ArrayList<>(players);
+
         this.board = new Board();
-        this.deck = new TileDeck(StandardTiles.createStandardDrawTiles());
+
+        this.deck = new TileDeck(
+                StandardTiles.createStandardDrawTiles()
+        );
         this.deck.shuffle();
+
         this.turn = new Turn();
 
-        PlacedTile startTile = new PlacedTile(StandardTiles.createStarterTile(), new Position(0, 0), Rotation.DEG_0);
+        PlacedTile startTile = new PlacedTile(
+                StandardTiles.createStarterTile(),
+                new Position(0, 0),
+                Rotation.DEG_0
+        );
+
         this.board.place(startTile);
 
         this.status = GameStatus.ACTIVE;
@@ -62,37 +113,101 @@ public class Game {
     }
 
     /**
-     * Construtor flexível com componentes injetados (para suporte a testes ou carregamento).
+     * Construtor flexível com componentes injetados.
+     *
+     * Mantido para testes ou eventual carregamento de uma partida.
      */
-    public Game(Board board, TileDeck deck, List<Player> players, Turn turn) {
+    public Game(
+            Board board,
+            TileDeck deck,
+            List<Player> players,
+            Turn turn
+    ) {
+        this(
+                board,
+                deck,
+                players,
+                turn,
+                new TilePlacementRules(),
+                new MeeplePlacementRules()
+        );
+    }
+
+    /**
+     * Variante do construtor flexível que também recebe as regras
+     * utilizadas pelo agregado.
+     */
+    public Game(
+            Board board,
+            TileDeck deck,
+            List<Player> players,
+            Turn turn,
+            TilePlacementRules tileRules,
+            MeeplePlacementRules meepleRules
+    ) {
         validatePlayers(players);
+
+        this.tileRules = Objects.requireNonNull(
+                tileRules,
+                "TilePlacementRules não pode ser nulo."
+        );
+
+        this.meepleRules = Objects.requireNonNull(
+                meepleRules,
+                "MeeplePlacementRules não pode ser nulo."
+        );
+
         this.players = new ArrayList<>(players);
-        this.board = board != null ? board : new Board();
-        this.deck = deck != null ? deck : new TileDeck(StandardTiles.createStandardDrawTiles());
-        this.turn = turn != null ? turn : new Turn();
+
+        this.board = board != null
+                ? board
+                : new Board();
+
+        this.deck = deck != null
+                ? deck
+                : new TileDeck(StandardTiles.createStandardDrawTiles());
+
+        this.turn = turn != null
+                ? turn
+                : new Turn();
+
         this.status = GameStatus.ACTIVE;
         this.currentPlayerIndex = 0;
     }
 
     private void validatePlayers(List<Player> players) {
         if (players == null || players.size() < 2 || players.size() > 5) {
-            throw new IllegalArgumentException("A partida deve ter entre 2 e 5 jogadores.");
+            throw new IllegalArgumentException(
+                    "A partida deve ter entre 2 e 5 jogadores."
+            );
         }
+
         for (Player player : players) {
             if (player == null) {
-                throw new IllegalArgumentException("Jogador não pode ser nulo.");
+                throw new IllegalArgumentException(
+                        "Jogador não pode ser nulo."
+                );
             }
         }
+
         long distinctColors = players.stream()
                 .map(Player::getColor)
                 .distinct()
                 .count();
+
         if (distinctColors != players.size()) {
-            throw new IllegalArgumentException("Cada jogador deve possuir uma cor distinta.");
+            throw new IllegalArgumentException(
+                    "Cada jogador deve possuir uma cor distinta."
+            );
         }
+
         for (Player player : players) {
             if (availableMeeples(player) != INITIAL_MEEPLES_PER_PLAYER) {
-                throw new IllegalStateException("Cada jogador deve iniciar com " + INITIAL_MEEPLES_PER_PLAYER + " meeples disponíveis.");
+                throw new IllegalStateException(
+                        "Cada jogador deve iniciar com "
+                                + INITIAL_MEEPLES_PER_PLAYER
+                                + " meeples disponíveis."
+                );
             }
         }
     }
@@ -101,101 +216,297 @@ public class Game {
         if (players == null || players.isEmpty()) {
             return null;
         }
+
         return players.get(currentPlayerIndex);
     }
 
     public Optional<Tile> currentDrawnTile() {
-        return turn != null ? turn.drawnTile() : Optional.empty();
+        return turn != null
+                ? turn.drawnTile()
+                : Optional.empty();
     }
 
     public Optional<PlacedTile> currentPlacedTile() {
-        return turn != null ? turn.placedTile() : Optional.empty();
+        return turn != null
+                ? turn.placedTile()
+                : Optional.empty();
     }
 
     public int availableMeeples(Player player) {
         if (player == null) {
             return 0;
         }
+
         long placed = meeples.stream()
                 .filter(m -> m.getPlayer().equals(player))
                 .count();
+
         return INITIAL_MEEPLES_PER_PLAYER - (int) placed;
     }
 
     private void requireActive() {
         if (status != GameStatus.ACTIVE) {
-            throw new InvalidTurnPhaseException("A partida já foi encerrada.");
+            throw new InvalidTurnPhaseException(
+                    "A partida já foi encerrada."
+            );
         }
     }
+
+    // =====================================================
+    // DRAW TILE
+    // =====================================================
 
     public Tile drawTile() {
         requireActive();
         turn.requireDrawTile();
+
         Tile tile = deck.draw();
+
         turn.recordDrawnTile(tile);
+
         return tile;
     }
 
+    /**
+     * Retorna as colocações legais para a peça sorteada atual.
+     *
+     * A regra é delegada para TilePlacementRules, mas o estado
+     * interno do agregado não é exposto ao chamador.
+     */
+    public List<Placement> legalPlacements() {
+        requireActive();
+        turn.requirePlaceTile();
+
+        Tile tile = currentDrawnTile()
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "Nenhuma peça sorteada."
+                        )
+                );
+
+        return tileRules.legalPlacements(
+                board,
+                tile
+        );
+    }
+
+    /**
+     * Uma peça só pode ser descartada se realmente não existir
+     * nenhuma colocação legal.
+     */
     public void discardDrawnTile() {
         requireActive();
+        turn.requirePlaceTile();
+
+        Tile tile = currentDrawnTile()
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "Nenhuma peça sorteada."
+                        )
+                );
+
+        if (!tileRules.legalPlacements(board, tile).isEmpty()) {
+            throw new InvalidPlacementException(
+                    "A peça não pode ser descartada enquanto houver colocações legais."
+            );
+        }
+
         turn.discardDrawnTile();
     }
 
+    // =====================================================
+    // PLACE TILE
+    // =====================================================
+
+    /**
+     * Valida e posiciona a peça sorteada.
+     *
+     * Game protege a invariante do agregado e delega apenas
+     * a regra específica de colocação para TilePlacementRules.
+     */
     public PlacedTile placeTile(Placement placement) {
         requireActive();
         turn.requirePlaceTile();
+
         Tile tile = currentDrawnTile()
-                .orElseThrow(() -> new IllegalStateException("Nenhuma peça sorteada."));
-        PlacedTile placed = new PlacedTile(tile, placement.getPosition(), placement.getRotation());
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "Nenhuma peça sorteada."
+                        )
+                );
+
+        if (!tileRules.canPlace(board, tile, placement)) {
+            throw new InvalidPlacementException(
+                    "Colocação de peça inválida: " + placement
+            );
+        }
+
+        PlacedTile placed = new PlacedTile(
+                tile,
+                placement.getPosition(),
+                placement.getRotation()
+        );
+
         board.place(placed);
+
         turn.recordPlacedTile(placed);
+
         return placed;
     }
 
+    // =====================================================
+    // MEEPLE
+    // =====================================================
+
+    /**
+     * Retorna as features da peça recém-colocada nas quais
+     * o jogador atual pode colocar um meeple.
+     */
+    public List<FeatureRef> legalMeepleFeatures() {
+        requireActive();
+        turn.requireMeepleDecision();
+
+        Player player = currentPlayer();
+
+        if (availableMeeples(player) <= 0) {
+            return List.of();
+        }
+
+        PlacedTile placed = currentPlacedTile()
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "Nenhuma peça posicionada."
+                        )
+                );
+
+        return meepleRules.legalFeatures(
+                board,
+                meeples,
+                placed
+        );
+    }
+
+    /**
+     * Coloca um meeple na feature indicada.
+     *
+     * Game verifica as invariantes que dependem do estado do agregado:
+     * - fase correta;
+     * - feature pertencente à peça deste turno;
+     * - jogador com meeple disponível.
+     *
+     * MeeplePlacementRules verifica a legalidade da região conectada.
+     */
     public void placeMeeple(FeatureRef feature) {
         requireActive();
         turn.requireMeepleDecision();
+
         PlacedTile placed = currentPlacedTile()
-                .orElseThrow(() -> new IllegalStateException("Nenhuma peça posicionada."));
-        if (!placed.getPosition().equals(feature.getPosition())) {
-            throw new InvalidMeeplePlacementException("O meeple deve ficar na peça colocada neste turno.");
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "Nenhuma peça posicionada."
+                        )
+                );
+
+        if (feature == null
+                || !placed.getPosition().equals(feature.getPosition())) {
+
+            throw new InvalidMeeplePlacementException(
+                    "O meeple deve ficar na peça colocada neste turno."
+            );
         }
+
         Player player = currentPlayer();
+
         if (availableMeeples(player) <= 0) {
-            throw new InvalidMeeplePlacementException("O jogador não possui meeples disponíveis.");
+            throw new InvalidMeeplePlacementException(
+                    "O jogador não possui meeples disponíveis."
+            );
         }
-        meeples.add(new MeeplePlacement(player, feature));
+
+        if (!meepleRules.canPlace(
+                board,
+                meeples,
+                feature
+        )) {
+            throw new InvalidMeeplePlacementException(
+                    "Colocação de meeple inválida: " + feature
+            );
+        }
+
+        meeples.add(
+                new MeeplePlacement(
+                        player,
+                        feature
+                )
+        );
+
         turn.resolveMeeple();
     }
 
     public void skipMeeple() {
         requireActive();
         turn.requireMeepleDecision();
+
         turn.resolveMeeple();
     }
 
+    // =====================================================
+    // SCORING
+    // =====================================================
+
+    /*
+     * Mantido como placeholder neste PR.
+     *
+     * A delegação de ScoringRules será feita no PR2.
+     */
     public void scoreEndGame() {
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException(
+                "Not implemented"
+        );
     }
 
-    /** Soma os pontos aos recebedores e devolve os meeples das regiões pontuadas. */
+    /**
+     * Soma os pontos aos recebedores e devolve os meeples
+     * das regiões pontuadas.
+     *
+     * Continua público temporariamente neste PR.
+     * Será tornado privado no PR2.
+     */
     public void applyAwards(List<ScoreAward> awards) {
         for (ScoreAward award : awards) {
-            award.getRecipients().forEach(p -> p.addScore(award.getPoints()));
-            removeMeeples(award.getRegion());
+            award.getRecipients()
+                    .forEach(
+                            player -> player.addScore(
+                                    award.getPoints()
+                            )
+                    );
+
+            removeMeeples(
+                    award.getRegion()
+            );
         }
     }
 
     private void removeMeeples(FeatureRegion region) {
-        meeples.removeIf(m -> region.contains(m.getFeature()));
+        meeples.removeIf(
+                meeple -> region.contains(
+                        meeple.getFeature()
+                )
+        );
     }
+
+    // =====================================================
+    // TURN / GAME LIFECYCLE
+    // =====================================================
 
     public boolean hasTilesRemaining() {
         return deck != null && !deck.isEmpty();
     }
 
     public void nextPlayer() {
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        currentPlayerIndex =
+                (currentPlayerIndex + 1) % players.size();
+
         turn.reset();
     }
 
@@ -203,6 +514,11 @@ public class Game {
         this.status = GameStatus.FINISHED;
     }
 
+    /**
+     * Retorna todos os jogadores empatados com a maior pontuação.
+     *
+     * Nenhum estado adicional de vencedor é armazenado.
+     */
     public List<Player> winners() {
         int highestScore = players.stream()
                 .mapToInt(Player::getScore)
@@ -210,9 +526,16 @@ public class Game {
                 .orElseThrow();
 
         return players.stream()
-                .filter(player -> player.getScore() == highestScore)
+                .filter(
+                        player ->
+                                player.getScore() == highestScore
+                )
                 .toList();
     }
+
+    // =====================================================
+    // READ-ONLY ACCESS
+    // =====================================================
 
     public Board getBoard() {
         return board;
@@ -235,10 +558,14 @@ public class Game {
     }
 
     public List<Player> getPlayers() {
-        return Collections.unmodifiableList(players);
+        return Collections.unmodifiableList(
+                players
+        );
     }
 
     public List<MeeplePlacement> getMeeples() {
-        return Collections.unmodifiableList(meeples);
+        return Collections.unmodifiableList(
+                meeples
+        );
     }
 }

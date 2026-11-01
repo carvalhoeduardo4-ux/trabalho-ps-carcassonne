@@ -6,8 +6,6 @@ import com.carcassonne.domain.board.FeatureRef;
 import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.game.Game;
 import com.carcassonne.domain.board.PlacedTile;
-import com.carcassonne.domain.exception.InvalidMeeplePlacementException;
-import com.carcassonne.domain.exception.InvalidPlacementException;
 import com.carcassonne.domain.rules.ScoreAward;
 import com.carcassonne.domain.player.Player;
 import com.carcassonne.domain.rules.MeeplePlacementRules;
@@ -31,10 +29,7 @@ public class GameEngine implements GameInputPort {
     private final TilePlacementRules tileRules;
     private final MeeplePlacementRules meepleRules;
     private final ScoringRules scoringRules;
-
-    public GameEngine() {
-        this(null, null, null);
-    }
+    
 
     @Autowired
     public GameEngine(TilePlacementRules tileRules, MeeplePlacementRules meepleRules, ScoringRules scoringRules) {
@@ -55,7 +50,11 @@ public class GameEngine implements GameInputPort {
             }
             domainPlayers.add(new Player(setup.getName(), setup.getColor()));
         }
-        this.game = new Game(domainPlayers);
+        this.game = new Game(
+                domainPlayers,
+                tileRules,
+                meepleRules
+        );
     }
 
     private Game requireGame() {
@@ -73,8 +72,9 @@ public class GameEngine implements GameInputPort {
             if (!g.hasTilesRemaining()) {
                 replacementRequired = false;
             } else {
-                Tile tile = g.drawTile();
-                if (tileRules.legalPlacements(g.getBoard(), tile).isEmpty()) {
+                g.drawTile();
+
+                if (g.legalPlacements().isEmpty()) {
                     g.discardDrawnTile();
                 } else {
                     replacementRequired = false;
@@ -90,41 +90,22 @@ public class GameEngine implements GameInputPort {
 
     @Override
     public List<Placement> getLegalPlacements() {
-        Game g = requireGame();
-        g.getTurn().requirePlaceTile();
-        Tile tile = g.currentDrawnTile().orElseThrow();
-        return tileRules.legalPlacements(g.getBoard(), tile);
+        return requireGame().legalPlacements();
     }
 
     @Override
     public void placeTile(Placement placement) {
-        Game g = requireGame();
-        g.getTurn().requirePlaceTile();
-        Tile tile = g.currentDrawnTile().orElseThrow();
-        if (!tileRules.canPlace(g.getBoard(), tile, placement)) {
-            throw new InvalidPlacementException("Colocação de peça inválida: " + placement);
-        }
-        g.placeTile(placement);
+        requireGame().placeTile(placement);
     }
 
     @Override
     public List<FeatureRef> getLegalMeepleFeatures() {
-        Game g = requireGame();
-        g.getTurn().requireMeepleDecision();
-        if (g.availableMeeples(g.currentPlayer()) <= 0) {
-            return List.of();
-        }
-        return meepleRules.legalFeatures(g.getBoard(), g.getMeeples(), g.currentPlacedTile().orElseThrow());
+        return requireGame().legalMeepleFeatures();
     }
 
     @Override
     public void placeMeeple(FeatureRef feature) {
-        Game g = requireGame();
-        g.getTurn().requireMeepleDecision();
-        if (!meepleRules.canPlace(g.getBoard(), g.getMeeples(), feature)) {
-            throw new InvalidMeeplePlacementException("Colocação de meeple inválida: " + feature);
-        }
-        g.placeMeeple(feature);
+        requireGame().placeMeeple(feature);
         resolveTurn();
     }
 
