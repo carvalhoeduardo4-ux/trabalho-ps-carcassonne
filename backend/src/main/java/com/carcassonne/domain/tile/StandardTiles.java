@@ -203,18 +203,14 @@ public final class StandardTiles {
         // L: Cidade em 1 borda com bifurcação T de estrada (3 peças)
         for (int i = 0; i < 3; i++) {
             tiles.add(new Tile("L", List.of(
-                new TileFeature(1, FeatureType.CITY, 0, List.of(
-                    new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
-                )),
-                new TileFeature(2, FeatureType.ROAD, 0, List.of(
-                    new EdgeContact(Direction.EAST, EdgeLane.CENTER)
-                )),
-                new TileFeature(3, FeatureType.ROAD, 0, List.of(
-                    new EdgeContact(Direction.SOUTH, EdgeLane.CENTER)
-                )),
-                new TileFeature(4, FeatureType.ROAD, 0, List.of(
-                    new EdgeContact(Direction.WEST, EdgeLane.CENTER)
-                ))
+                    new TileFeature(1, FeatureType.CITY, 0, List.of(
+                            new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
+                    )),
+                    new TileFeature(2, FeatureType.ROAD, 0, List.of(
+                            new EdgeContact(Direction.EAST, EdgeLane.CENTER),
+                            new EdgeContact(Direction.SOUTH, EdgeLane.CENTER),
+                            new EdgeContact(Direction.WEST, EdgeLane.CENTER)
+                    ))
             )));
         }
 
@@ -357,35 +353,24 @@ public final class StandardTiles {
         // W: Bifurcação em T de estradas (4 peças)
         for (int i = 0; i < 4; i++) {
             tiles.add(new Tile("W", List.of(
-                new TileFeature(1, FeatureType.ROAD, 0, List.of(
-                    new EdgeContact(Direction.SOUTH, EdgeLane.CENTER)
-                )),
-                new TileFeature(2, FeatureType.ROAD, 0, List.of(
-                    new EdgeContact(Direction.WEST, EdgeLane.CENTER)
-                )),
-                new TileFeature(3, FeatureType.ROAD, 0, List.of(
-                    new EdgeContact(Direction.EAST, EdgeLane.CENTER)
-                )),
-                new TileFeature(4, FeatureType.FIELD, 0, List.of(
-                    new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
-                ))
+                    new TileFeature(1, FeatureType.ROAD, 0, List.of(
+                            new EdgeContact(Direction.SOUTH, EdgeLane.CENTER),
+                            new EdgeContact(Direction.WEST, EdgeLane.CENTER),
+                            new EdgeContact(Direction.EAST, EdgeLane.CENTER)
+                    )),
+                    new TileFeature(4, FeatureType.FIELD, 0, List.of(
+                            new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
+                    ))
             )));
         }
-
         // X: Cruzamento de 4 estradas (1 peça)
         tiles.add(new Tile("X", List.of(
-            new TileFeature(1, FeatureType.ROAD, 0, List.of(
-                new EdgeContact(Direction.NORTH, EdgeLane.CENTER)
-            )),
-            new TileFeature(2, FeatureType.ROAD, 0, List.of(
-                new EdgeContact(Direction.EAST, EdgeLane.CENTER)
-            )),
-            new TileFeature(3, FeatureType.ROAD, 0, List.of(
-                new EdgeContact(Direction.SOUTH, EdgeLane.CENTER)
-            )),
-            new TileFeature(4, FeatureType.ROAD, 0, List.of(
-                new EdgeContact(Direction.WEST, EdgeLane.CENTER)
-            ))
+                new TileFeature(1, FeatureType.ROAD, 0, List.of(
+                        new EdgeContact(Direction.NORTH, EdgeLane.CENTER),
+                        new EdgeContact(Direction.EAST, EdgeLane.CENTER),
+                        new EdgeContact(Direction.SOUTH, EdgeLane.CENTER),
+                        new EdgeContact(Direction.WEST, EdgeLane.CENTER)
+                ))
         )));
 
         return tiles;
