@@ -27,7 +27,7 @@ public class GameEngine implements GameInputPort {
     private final TilePlacementRules tileRules;
     private final MeeplePlacementRules meepleRules;
     private final ScoringRules scoringRules;
-    
+
 
     @Autowired
     public GameEngine(TilePlacementRules tileRules, MeeplePlacementRules meepleRules, ScoringRules scoringRules) {
@@ -126,7 +126,9 @@ public class GameEngine implements GameInputPort {
     }
 
     private void finishGame() {
-        game.finish();
+        Game g = requireGame();
+        g.scoreEndGame();
+        g.finish();
     }
 }
 
