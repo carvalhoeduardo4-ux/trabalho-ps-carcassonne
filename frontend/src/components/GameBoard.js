@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { TileSvg } from './TileSvg.js';
 import { toRenderTile, meepleSegment } from '../ui/tileAdapter.js';
 
@@ -22,10 +22,12 @@ export function GameBoard({
   meeples = [],
   validPlacements = [],
   onPlaceTile,
+  onInvalidPlacement,
   phase,
   players = []
 }) {
   const boardRef = useRef(null);
+  const [flashKey, setFlashKey] = useState(null); // célula que acabou de receber um clique inválido
   const bounds = getBounds(board, 1);
 
   // Peças indexadas por posição, já no formato de desenho (com meeples)
@@ -45,6 +47,25 @@ export function GameBoard({
   }, [board, meeples]);
 
   const validMap = new Set(validPlacements.map(p => keyOf(p.x, p.y)));
+
+  useEffect(() => {
+    if (!flashKey) return undefined;
+    const timer = setTimeout(() => setFlashKey(null), 600);
+    return () => clearTimeout(timer);
+  }, [flashKey]);
+
+  /** Explica por que a célula clicada não aceita a peça atual. */
+  const invalidReason = (x, y) => {
+    if (tilesByKey.has(keyOf(x, y))) return 'occupied';
+    const touches = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+      .some(([dx, dy]) => tilesByKey.has(keyOf(x + dx, y + dy)));
+    return touches ? 'incompatible' : 'isolated';
+  };
+
+  const handleInvalidClick = (x, y) => {
+    setFlashKey(keyOf(x, y));
+    if (onInvalidPlacement) onInvalidPlacement(invalidReason(x, y));
+  };
 
   const centerBoard = () => {
     if (boardRef.current) {
@@ -68,12 +89,14 @@ export function GameBoard({
       const key = keyOf(x, y);
       const placedTile = tilesByKey.get(key);
       const isValidSlot = phase === 'PLACE_TILE' && validMap.has(key);
+      const rejectsClick = phase === 'PLACE_TILE' && !isValidSlot;
 
       cells.push(
         React.createElement('div', {
           key: `cell-${x}-${y}`,
-          className: 'grid-cell',
-          style: { width: tileSize, height: tileSize }
+          className: `grid-cell${rejectsClick ? ' grid-cell-blocked' : ''}${flashKey === key ? ' invalid-flash' : ''}`,
+          style: { width: tileSize, height: tileSize },
+          onClick: rejectsClick ? () => handleInvalidClick(x, y) : undefined
         }, [
           placedTile ? React.createElement(TileSvg, {
             key: `tile-${key}`,

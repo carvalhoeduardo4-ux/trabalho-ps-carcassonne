@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import * as api from './api/gameApi.js';
 import { TurnPhase, colorById } from './ui/constants.js';
 import { GameBoard } from './components/GameBoard.js';
@@ -8,6 +8,23 @@ import { SetupModal } from './components/SetupModal.js';
 import { GameOverModal } from './components/GameOverModal.js';
 
 const ROTATION_ORDER = ['DEG_0', 'DEG_90', 'DEG_180', 'DEG_270'];
+
+const ERROR_TIMEOUT_MS = 4500;
+
+// Motivos de clique inválido no tabuleiro (calculados em GameBoard)
+const INVALID_PLACEMENT_MESSAGES = {
+  occupied: 'Esta posição já está ocupada por outra peça.',
+  isolated: 'A peça precisa encostar em pelo menos uma peça já colocada.',
+  incompatible: 'As bordas não encaixam com as peças vizinhas (cidade com cidade, estrada com estrada, campo com campo). Gire a peça ou escolha uma posição destacada.'
+};
+
+/** Troca mensagens técnicas do backend por textos que o jogador entende. */
+function friendlyError(message) {
+  if (/inválida na fase/i.test(message)) {
+    return 'Essa ação não está disponível nesta etapa do turno.';
+  }
+  return message;
+}
 
 export function App() {
   const [isSettingUp, setIsSettingUp] = useState(false);
@@ -25,17 +42,29 @@ export function App() {
     setGame(s);
   };
 
+  const inFlight = useRef(false);
+
   const run = async (action) => {
+    if (inFlight.current) return; // ignora cliques repetidos enquanto uma ação está em andamento
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
       await settle(await action());
     } catch (e) {
-      setError(e.message);
+      setError(friendlyError(e.message));
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   };
+
+  // Avisos somem sozinhos
+  useEffect(() => {
+    if (!error) return undefined;
+    const timer = setTimeout(() => setError(null), ERROR_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [error]);
 
   useEffect(() => {
     api.getState()
@@ -66,6 +95,10 @@ export function App() {
 
   const handlePlaceTile = (x, y) => run(() => api.placeTile({ x, y, rotation }));
 
+  const handleInvalidPlacement = (reason) => {
+    setError(INVALID_PLACEMENT_MESSAGES[reason] || 'Posição inválida para esta peça.');
+  };
+
   const handlePlaceMeeple = (option) => run(() => api.placeMeeple(option));
 
   const handleSkipMeeple = () => run(() => api.skipMeeple());
@@ -93,9 +126,9 @@ export function App() {
     // Mensagem de erro retornada pelo backend
     error ? React.createElement('div', {
       key: 'error-banner',
-      className: 'badge badge-action',
+      className: 'toast toast-error',
       role: 'alert',
-      style: { margin: '8px 16px', cursor: 'pointer' },
+      title: 'Clique para fechar',
       onClick: () => setError(null)
     }, `⚠️ ${error}`) : null,
 
@@ -108,6 +141,7 @@ export function App() {
           meeples: game.meeples,
           validPlacements: validPlacements,
           onPlaceTile: handlePlaceTile,
+          onInvalidPlacement: handleInvalidPlacement,
           phase: game.phase,
           players: players
         })

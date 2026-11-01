@@ -213,15 +213,17 @@ h1, h2, h3, h4, .font-heading {
 
 .game-layout {
   flex: 1;
+  min-height: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
   position: relative;
 }
 
 .board-area {
   flex: 1;
-  height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -245,7 +247,7 @@ h1, h2, h3, h4, .font-heading {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
   position: relative;
 }
 
@@ -253,10 +255,10 @@ h1, h2, h3, h4, .font-heading {
   flex: 1;
   overflow: auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Sem align/justify-content: center: com overflow o excedente iria para o lado
+     negativo (oeste/norte) e ficaria inalcançável. O canvas centraliza com margin: auto. */
   cursor: grab;
-  padding-bottom: 120px; /* Space for action bar */
+  min-height: 0;
 }
 
 .board-scroll-container:active {
@@ -264,6 +266,8 @@ h1, h2, h3, h4, .font-heading {
 }
 
 .board-canvas {
+  margin: auto;
+  flex: none;
   display: inline-flex;
   flex-direction: column;
   padding: 80px;
@@ -286,6 +290,61 @@ h1, h2, h3, h4, .font-heading {
   background: rgba(139, 90, 43, 0.08);
   border: 1px solid rgba(139, 90, 43, 0.1);
   transition: all 0.2s ease;
+}
+
+/* Clique em posição que não aceita a peça atual: cursor bloqueado + sacudida vermelha */
+.grid-cell-blocked {
+  cursor: not-allowed;
+}
+
+.invalid-flash::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 3px solid var(--danger);
+  background: rgba(168, 50, 50, 0.35);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.invalid-flash {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* Aviso flutuante (não desloca o layout) */
+.toast {
+  position: fixed;
+  top: 116px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  background: rgba(44, 24, 16, 0.96);
+  border: 1px solid var(--danger);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  z-index: 1000;
+  animation: toastIn 0.2s ease-out;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 /* =========================================================
@@ -783,6 +842,8 @@ h1, h2, h3, h4, .font-heading {
   font-weight: 700;
   padding: 4px 10px;
   border-radius: var(--radius-full);
+  width: 17%;
+  text-align: center;
 }
 
 .form-label {
@@ -908,4 +969,382 @@ h1, h2, h3, h4, .font-heading {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(139, 90, 43, 0.7);
+}
+
+/* =========================================================
+   Board header bar (stats + center button)
+   ========================================================= */
+
+.board-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(44, 24, 16, 0.12);
+  border-bottom: 1px solid rgba(139, 90, 43, 0.3);
+}
+
+.board-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(44, 24, 16, 0.85);
+  border: 1px solid var(--border-wood);
+  border-radius: var(--radius-full);
+}
+
+.badge-action {
+  color: var(--gold-light);
+  border-color: var(--border-gold);
+}
+
+.board-header-bar .btn-outline {
+  color: var(--text-dark);
+  border-color: rgba(139, 90, 43, 0.6);
+}
+
+/* =========================================================
+   Sidebar HUD (turn panel + scoreboard)
+   Fixed-width column on the right; scrolls on its own so the
+   HUD never overflows the viewport.
+   ========================================================= */
+
+.sidebar-area {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #2c1810 0%, #1a0f08 100%);
+  border-left: 2px solid var(--border-gold);
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+}
+
+.card {
+  background: rgba(61, 36, 21, 0.7);
+  border: 1px solid var(--border-wood);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Turn panel */
+.turn-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.player-indicator {
+  min-width: 0;
+  padding-left: 10px;
+  border-left: 4px solid var(--gold);
+}
+
+.turn-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.player-name-current {
+  font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deck-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+}
+
+.deck-number {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--gold-light);
+  line-height: 1.1;
+}
+
+.deck-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.tile-action-box,
+.meeple-action-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.drawn-tile-preview {
+  position: relative;
+  padding: 6px;
+  line-height: 0;
+  background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-gold), 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.drawn-tile-preview svg {
+  border-radius: 6px;
+}
+
+.rotation-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  line-height: 1.4;
+  background: var(--gold);
+  color: var(--bg-main);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+}
+
+.tile-info {
+  text-align: center;
+}
+
+.tile-name {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.tile-help-text {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.btn-rotate,
+.btn-skip-meeple {
+  width: 100%;
+}
+
+.meeple-box-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+}
+
+.meeple-title {
+  font-size: 15px;
+  color: var(--gold-light);
+}
+
+.meeple-subtitle,
+.no-meeple-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.meeple-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: stretch;
+}
+
+.options-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.btn-meeple-segment {
+  justify-content: flex-start;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.segment-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Scoreboard */
+.panel-title {
+  font-size: 14px;
+  color: var(--gold-light);
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-wood);
+  border-left: 4px solid var(--gold);
+  border-radius: var(--radius-md);
+  transition: all 0.25s ease;
+}
+
+.player-card.player-active {
+  background: rgba(200, 149, 46, 0.15);
+  border-color: var(--gold);
+  box-shadow: var(--shadow-gold);
+}
+
+.player-card-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.player-avatar-box {
+  position: relative;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.turn-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: var(--shadow-gold);
+}
+
+.player-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.player-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.current-badge {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: var(--gold);
+  color: var(--bg-main);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+}
+
+.player-subtext {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.player-score {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.score-number {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--gold-light);
+}
+
+.score-unit {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.history-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-wood);
+}
+
+.history-title {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.history-list {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.history-item {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Narrow windows: HUD moves below the board, with its own scroll */
+@media (max-width: 900px) {
+  .game-layout {
+    flex-direction: column;
+  }
+
+  .sidebar-area {
+    width: 100%;
+    max-height: 45vh;
+    border-left: none;
+    border-top: 2px solid var(--border-gold);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4);
+  }
 }
