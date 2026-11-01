@@ -204,14 +204,14 @@ public class Game {
     }
 
     public List<Player> winners() {
-    int highestScore = players.stream()
-            .mapToInt(Player::getScore)
-            .max()
-            .orElseThrow();
+        int highestScore = players.stream()
+                .mapToInt(Player::getScore)
+                .max()
+                .orElseThrow();
 
-    return players.stream()
-            .filter(player -> player.getScore() == highestScore)
-            .toList();
+        return players.stream()
+                .filter(player -> player.getScore() == highestScore)
+                .toList();
     }
 
     public Board getBoard() {
