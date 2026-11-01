@@ -1,7 +1,7 @@
 import React from 'react';
 import { MeepleIcon } from './TileSvg.js';
 
-export function ScoreBoard({ players = [], currentPlayerIndex = 0 }) {
+export function ScoreBoard({ players = [], currentPlayerIndex = 0, gains = {}, gainId = null }) {
   return React.createElement('div', { className: 'scoreboard-panel card' }, [
     React.createElement('div', { className: 'scoreboard-header' }, [
       React.createElement('h3', { className: 'panel-title' }, '🏆 Placar de Jogadores')
@@ -10,9 +10,10 @@ export function ScoreBoard({ players = [], currentPlayerIndex = 0 }) {
     React.createElement('div', { className: 'players-list' }, 
       players.map((p, idx) => {
         const isCurrent = idx === currentPlayerIndex;
+        const gain = gains[idx];
         return React.createElement('div', {
           key: `${p.name}-${idx}`,
-          className: `player-card ${isCurrent ? 'player-active' : ''}`,
+          className: `player-card ${isCurrent ? 'player-active' : ''} ${gain ? 'score-pulse' : ''}`,
           style: { borderLeftColor: p.color.hex }
         }, [
           React.createElement('div', { className: 'player-card-info' }, [
@@ -32,7 +33,12 @@ export function ScoreBoard({ players = [], currentPlayerIndex = 0 }) {
           ]),
           React.createElement('div', { className: 'player-score' }, [
             React.createElement('span', { className: 'score-number' }, p.score),
-            React.createElement('span', { className: 'score-unit' }, 'pts')
+            React.createElement('span', { className: 'score-unit' }, 'pts'),
+            gain ? React.createElement('span', {
+              key: `gain-${gainId}`,
+              className: 'score-gain',
+              'aria-label': `${p.name} ganhou ${gain} pontos`
+            }, `+${gain}`) : null
           ])
         ]);
       })

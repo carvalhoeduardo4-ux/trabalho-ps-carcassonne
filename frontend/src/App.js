@@ -18,6 +18,50 @@ const INVALID_PLACEMENT_MESSAGES = {
   incompatible: 'As bordas não encaixam com as peças vizinhas (cidade com cidade, estrada com estrada, campo com campo). Gire a peça ou escolha uma posição destacada.'
 };
 
+const SCORE_NOTICE_MS = 4500;
+
+const STRUCTURE_LABELS = { CITY: 'Cidade', ROAD: 'Estrada', MONASTERY: 'Mosteiro', FIELD: 'Campo' };
+
+const meepleKey = (m) => `${m.x},${m.y},${m.featureId},${m.playerIndex}`;
+
+/**
+ * Compara o estado anterior com o novo e descreve a pontuação do turno:
+ * quem ganhou pontos, quais estruturas foram concluídas (meeples que saíram do
+ * tabuleiro) e em quais peças. Devolve null se ninguém pontuou.
+ */
+function detectScoring(prev, next) {
+  if (!prev || prev.players.length !== next.players.length || next.board.length < prev.board.length) return null;
+  const gains = {};
+  next.players.forEach((p, i) => {
+    const delta = p.score - prev.players[i].score;
+    if (delta > 0) gains[i] = delta;
+  });
+  const winners = Object.keys(gains).map(Number);
+  if (winners.length === 0) return null;
+
+  const stillThere = new Set(next.meeples.map(meepleKey));
+  const removed = prev.meeples.filter(m => !stillThere.has(meepleKey(m)));
+  const types = new Set();
+  const keys = new Set();
+  removed.forEach(m => {
+    keys.add(`${m.x},${m.y}`);
+    const tile = next.board.find(t => t.x === m.x && t.y === m.y);
+    const feature = tile && tile.features.find(f => f.id === m.featureId);
+    if (feature) types.add(STRUCTURE_LABELS[feature.type] || 'Estrutura');
+  });
+
+  const what = types.size > 0 ? [...types].join(' e ') : 'Estrutura';
+  const plural = types.size > 1 ? 'concluídas' : 'concluída';
+  const who = winners.map(i => `${next.players[i].name} +${gains[i]} pts`).join(' · ');
+  const tie = winners.length > 1 ? ' (empate: todos pontuam)' : '';
+  return {
+    id: Date.now(),
+    gains,
+    keys: [...keys],
+    message: `${what} ${plural}! ${who}${tie}`
+  };
+}
+
 /** Troca mensagens técnicas do backend por textos que o jogador entende. */
 function friendlyError(message) {
   if (/inválida na fase/i.test(message)) {
@@ -33,12 +77,16 @@ export function App() {
   const [rotation, setRotation] = useState('DEG_0');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [scoreInfo, setScoreInfo] = useState(null); // pontuação do último turno (feedback visual)
+  const gameRef = useRef(null);
 
   // Compra automaticamente a próxima peça quando o turno volta à fase DRAW_TILE
   const settle = async (state) => {
     let s = state;
     if (s.status === 'ACTIVE' && s.phase === TurnPhase.DRAW_TILE) s = await api.drawTile();
     setRotation('DEG_0');
+    setScoreInfo(detectScoring(gameRef.current, s));
+    gameRef.current = s;
     setGame(s);
   };
 
@@ -65,6 +113,12 @@ export function App() {
     const timer = setTimeout(() => setError(null), ERROR_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [error]);
+
+  useEffect(() => {
+    if (!scoreInfo) return undefined;
+    const timer = setTimeout(() => setScoreInfo(null), SCORE_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [scoreInfo]);
 
   useEffect(() => {
     api.getState()
@@ -123,14 +177,23 @@ export function App() {
       ])
     ]),
 
-    // Mensagem de erro retornada pelo backend
-    error ? React.createElement('div', {
-      key: 'error-banner',
-      className: 'toast toast-error',
-      role: 'alert',
-      title: 'Clique para fechar',
-      onClick: () => setError(null)
-    }, `⚠️ ${error}`) : null,
+    // Avisos flutuantes: erros/jogadas inválidas e pontuação de estruturas concluídas
+    (error || scoreInfo) ? React.createElement('div', { key: 'toast-stack', className: 'toast-stack' }, [
+      scoreInfo ? React.createElement('div', {
+        key: 'score-toast',
+        className: 'toast toast-score',
+        role: 'status',
+        title: 'Clique para fechar',
+        onClick: () => setScoreInfo(null)
+      }, `🏆 ${scoreInfo.message}`) : null,
+      error ? React.createElement('div', {
+        key: 'error-banner',
+        className: 'toast toast-error',
+        role: 'alert',
+        title: 'Clique para fechar',
+        onClick: () => setError(null)
+      }, `⚠️ ${error}`) : null
+    ]) : null,
 
     // Conteúdo Principal da Aplicação
     game ? React.createElement('main', { key: 'main-layout', className: 'game-layout' }, [
@@ -142,6 +205,7 @@ export function App() {
           validPlacements: validPlacements,
           onPlaceTile: handlePlaceTile,
           onInvalidPlacement: handleInvalidPlacement,
+          scoredKeys: scoreInfo ? scoreInfo.keys : [],
           phase: game.phase,
           players: players
         })
@@ -161,7 +225,9 @@ export function App() {
         }),
         React.createElement(ScoreBoard, {
           players: players,
-          currentPlayerIndex: game.currentPlayerIndex
+          currentPlayerIndex: game.currentPlayerIndex,
+          gains: scoreInfo ? scoreInfo.gains : {},
+          gainId: scoreInfo ? scoreInfo.id : null
         })
       ])
     ]) : (!isSettingUp ? React.createElement('div', {

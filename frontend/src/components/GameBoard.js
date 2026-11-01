@@ -23,6 +23,7 @@ export function GameBoard({
   validPlacements = [],
   onPlaceTile,
   onInvalidPlacement,
+  scoredKeys = [],
   phase,
   players = []
 }) {
@@ -94,7 +95,7 @@ export function GameBoard({
       cells.push(
         React.createElement('div', {
           key: `cell-${x}-${y}`,
-          className: `grid-cell${rejectsClick ? ' grid-cell-blocked' : ''}${flashKey === key ? ' invalid-flash' : ''}`,
+          className: `grid-cell${rejectsClick ? ' grid-cell-blocked' : ''}${flashKey === key ? ' invalid-flash' : ''}${scoredKeys.includes(key) ? ' score-flash' : ''}`,
           style: { width: tileSize, height: tileSize },
           onClick: rejectsClick ? () => handleInvalidClick(x, y) : undefined
         }, [
