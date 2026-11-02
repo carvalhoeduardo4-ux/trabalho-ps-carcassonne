@@ -86,7 +86,7 @@ Todas as `GameActionException` são erros de regra: o frontend deve mapeá-las p
 | `Tile` | `features: List<TileFeature>` |
 | `TileFeature` | `id`, `type` (CITY/ROAD/MONASTERY/FIELD), `shieldCount`, `edgeContacts` |
 | `EdgeContact` | `side` (NORTH/EAST/SOUTH/WEST), `lane` (LEFT/CENTER/RIGHT) — lados **sem rotação** (da peça original) |
-| `PlacedTile` | `tile`, `position`, `rotation` |
+| `PlacedTile` | `tile`, `placement` (construtor `PlacedTile(Tile, Placement)`; getters de posição e rotação delegados a `Placement`) |
 | `FeatureRef` | `position`, `featureId` — identifica uma feature numa peça posicionada |
 | `MeeplePlacement` | `player`, `feature` (`FeatureRef`) |
 | `Player` | `name`, `color`, `score` |

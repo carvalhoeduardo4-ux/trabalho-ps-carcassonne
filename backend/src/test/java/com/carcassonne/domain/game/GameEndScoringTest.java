@@ -59,8 +59,7 @@ class GameEndGameScoringTest {
         board.place(
                 new PlacedTile(
                         initialRoad,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -183,8 +182,7 @@ class GameEndGameScoringTest {
         board.place(
                 new PlacedTile(
                         initialTile,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 

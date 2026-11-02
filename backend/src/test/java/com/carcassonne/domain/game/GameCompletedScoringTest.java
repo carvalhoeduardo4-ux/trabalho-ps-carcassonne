@@ -55,8 +55,7 @@ class GameCompletedScoringTest {
         board.place(
                 new PlacedTile(
                         leftRoadEnd,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 

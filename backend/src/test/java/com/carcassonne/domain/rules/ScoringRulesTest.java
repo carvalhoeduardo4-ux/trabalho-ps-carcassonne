@@ -3,6 +3,7 @@ package com.carcassonne.domain.rules;
 import com.carcassonne.domain.board.Board;
 import com.carcassonne.domain.board.FeatureRef;
 import com.carcassonne.domain.board.PlacedTile;
+import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.board.Position;
 import com.carcassonne.domain.player.MeeplePlacement;
 import com.carcassonne.domain.player.Player;
@@ -227,8 +228,7 @@ class ScoringRulesTest {
         board.place(
                 new PlacedTile(
                         tile,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -309,16 +309,14 @@ class ScoringRulesTest {
         board.place(
                 new PlacedTile(
                         road,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
         board.place(
                 new PlacedTile(
                         road,
-                        new Position(1, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(1, 0), Rotation.DEG_0)
                 )
         );
 
@@ -430,8 +428,7 @@ class ScoringRulesTest {
         board.place(
                 new PlacedTile(
                         tile,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -504,8 +501,7 @@ class ScoringRulesTest {
         board.place(
                 new PlacedTile(
                         tile,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -593,8 +589,7 @@ class ScoringRulesTest {
         board.place(
                 new PlacedTile(
                         junction,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -650,8 +645,7 @@ class ScoringRulesTest {
 
         return new PlacedTile(
                 tile,
-                position,
-                Rotation.DEG_0
+                new Placement(position, Rotation.DEG_0)
         );
     }
 }

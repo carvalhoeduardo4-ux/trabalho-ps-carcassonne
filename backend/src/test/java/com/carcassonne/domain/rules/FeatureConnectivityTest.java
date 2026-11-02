@@ -4,6 +4,7 @@ import com.carcassonne.domain.board.Board;
 import com.carcassonne.domain.board.FeatureRef;
 import com.carcassonne.domain.board.FeatureRegion;
 import com.carcassonne.domain.board.PlacedTile;
+import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.board.Position;
 import com.carcassonne.domain.tile.Direction;
 import com.carcassonne.domain.tile.EdgeContact;
@@ -159,16 +160,14 @@ class FeatureConnectivityTest {
         board.place(
                 new PlacedTile(
                         leftTile,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
         board.place(
                 new PlacedTile(
                         rightTile,
-                        new Position(1, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(1, 0), Rotation.DEG_0)
                 )
         );
 
@@ -264,16 +263,14 @@ class FeatureConnectivityTest {
         board.place(
                 new PlacedTile(
                         first,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
         board.place(
                 new PlacedTile(
                         second,
-                        new Position(0, 1),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 1), Rotation.DEG_0)
                 )
         );
 
@@ -388,16 +385,14 @@ class FeatureConnectivityTest {
         board.place(
                 new PlacedTile(
                         bottom,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
         board.place(
                 new PlacedTile(
                         top,
-                        new Position(0, 1),
-                        Rotation.DEG_180
+                        new Placement(new Position(0, 1), Rotation.DEG_180)
                 )
         );
 
@@ -474,16 +469,14 @@ class FeatureConnectivityTest {
         board.place(
                 new PlacedTile(
                         first,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
         board.place(
                 new PlacedTile(
                         second,
-                        new Position(1, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(1, 0), Rotation.DEG_0)
                 )
         );
 
@@ -652,16 +645,14 @@ class FeatureConnectivityTest {
         board.place(
                 new PlacedTile(
                         left,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
         board.place(
                 new PlacedTile(
                         right,
-                        new Position(1, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(1, 0), Rotation.DEG_0)
                 )
         );
 
@@ -737,8 +728,7 @@ class FeatureConnectivityTest {
         board.place(
                 new PlacedTile(
                         tile,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -800,8 +790,7 @@ class FeatureConnectivityTest {
         board.place(
                 new PlacedTile(
                         junction,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -857,8 +846,7 @@ class FeatureConnectivityTest {
         board.place(
                 new PlacedTile(
                         tileById("L"),
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -914,8 +902,7 @@ class FeatureConnectivityTest {
 
         return new PlacedTile(
                 tile,
-                position,
-                Rotation.DEG_0
+                new Placement(position, Rotation.DEG_0)
         );
     }
 

@@ -129,8 +129,7 @@ public class Game {
 
         PlacedTile startTile = new PlacedTile(
                 StandardTiles.createStarterTile(),
-                new Position(0, 0),
-                Rotation.DEG_0
+                new Placement(new Position(0, 0), Rotation.DEG_0)
         );
 
         this.board.place(startTile);
@@ -395,11 +394,7 @@ public class Game {
             );
         }
 
-        PlacedTile placed = new PlacedTile(
-                tile,
-                placement.getPosition(),
-                placement.getRotation()
-        );
+        PlacedTile placed = new PlacedTile(tile, placement);
 
         board.place(placed);
 

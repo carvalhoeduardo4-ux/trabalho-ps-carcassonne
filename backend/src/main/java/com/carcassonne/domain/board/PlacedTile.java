@@ -13,29 +13,31 @@ import java.util.Optional;
 public class PlacedTile {
 
     private final Tile tile;
-    private final Position position;
-    private final Rotation rotation;
+    private final Placement placement;
 
-    public PlacedTile(Tile tile, Position position, Rotation rotation) {
+    public PlacedTile(Tile tile, Placement placement) {
         this.tile = tile;
-        this.position = position;
-        this.rotation = rotation;
+        this.placement = placement;
     }
 
     public Tile getTile() {
         return tile;
     }
 
+    public Placement getPlacement() {
+        return placement;
+    }
+
     public Position getPosition() {
-        return position;
+        return placement.getPosition();
     }
 
     public Rotation getRotation() {
-        return rotation;
+        return placement.getRotation();
     }
 
     public Optional<TileFeature> edgeFeature(Direction side) {
-        return tile.edgeFeature(side, rotation);
+        return tile.edgeFeature(side, getRotation());
     }
 
     public TileFeature feature(int featureId) {
@@ -43,7 +45,7 @@ public class PlacedTile {
     }
 
     public Optional<TileFeature> featureAt(Direction side, EdgeLane lane) {
-        return tile.featureAt(side, lane, rotation);
+        return tile.featureAt(side, lane, getRotation());
     }
 
     @Override
@@ -51,17 +53,16 @@ public class PlacedTile {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PlacedTile that = (PlacedTile) o;
-        return Objects.equals(tile, that.tile) && Objects.equals(position, that.position) && rotation == that.rotation;
+        return Objects.equals(tile, that.tile) && Objects.equals(placement, that.placement);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(tile, position, rotation);
+        return Objects.hash(tile, placement);
     }
 
     @Override
     public String toString() {
-        return "PlacedTile(pos=" + position + ", rot=" + rotation + ")";
+        return "PlacedTile(pos=" + getPosition() + ", rot=" + getRotation() + ")";
     }
 }
-

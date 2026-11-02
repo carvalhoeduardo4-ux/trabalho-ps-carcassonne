@@ -83,8 +83,7 @@ class GameTurnFlowTest {
         board.place(
                 new PlacedTile(
                         StandardTiles.createStarterTile(),
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 

@@ -4,6 +4,7 @@ import com.carcassonne.domain.board.Board;
 import com.carcassonne.domain.board.FeatureRef;
 import com.carcassonne.domain.board.FeatureRegion;
 import com.carcassonne.domain.board.PlacedTile;
+import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.board.Position;
 import com.carcassonne.domain.tile.Direction;
 import com.carcassonne.domain.tile.EdgeContact;
@@ -306,8 +307,7 @@ class ScoringStrategiesTest {
         board.place(
                 new PlacedTile(
                         tile,
-                        position,
-                        Rotation.DEG_0
+                        new Placement(position, Rotation.DEG_0)
                 )
         );
 
@@ -394,8 +394,7 @@ class ScoringStrategiesTest {
         board.place(
                 new PlacedTile(
                         tile,
-                        position,
-                        Rotation.DEG_0
+                        new Placement(position, Rotation.DEG_0)
                 )
         );
 
@@ -452,8 +451,7 @@ class ScoringStrategiesTest {
 
         return new PlacedTile(
                 tile,
-                position,
-                Rotation.DEG_0
+                new Placement(position, Rotation.DEG_0)
         );
     }
 
@@ -479,8 +477,7 @@ class ScoringStrategiesTest {
         board.place(
                 new PlacedTile(
                         monastery,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -505,8 +502,7 @@ class ScoringStrategiesTest {
                             dummyTile(
                                     "D" + i
                             ),
-                            positions.get(i),
-                            Rotation.DEG_0
+                            new Placement(positions.get(i), Rotation.DEG_0)
                     )
             );
         }

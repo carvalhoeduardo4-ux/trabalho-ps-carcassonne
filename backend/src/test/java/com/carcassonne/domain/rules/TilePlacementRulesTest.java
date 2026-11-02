@@ -78,8 +78,7 @@ class TilePlacementRulesTest {
         board.place(
                 new PlacedTile(
                         existing,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -153,8 +152,7 @@ class TilePlacementRulesTest {
         board.place(
                 new PlacedTile(
                         existing,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -192,8 +190,7 @@ class TilePlacementRulesTest {
         board.place(
                 new PlacedTile(
                         existing,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
@@ -304,8 +301,7 @@ class TilePlacementRulesTest {
         board.place(
                 new PlacedTile(
                         existing,
-                        new Position(0, 0),
-                        Rotation.DEG_0
+                        new Placement(new Position(0, 0), Rotation.DEG_0)
                 )
         );
 
