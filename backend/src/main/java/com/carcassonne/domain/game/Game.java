@@ -527,23 +527,27 @@ public class Game {
         applyAwards(awards);
     }
 
-    /*
-     * Mantido como placeholder neste PR.
+    /**
+     * Calcula e aplica todas as premiações restantes no fim da partida.
      *
-     * A delegação de ScoringRules será feita no PR2.
+     * ScoringRules identifica as regiões com meeple e calcula os pontos
+     * conforme a Strategy correspondente. Game continua responsável por
+     * alterar o estado do agregado: soma pontos e devolve os meeples.
      */
     public void scoreEndGame() {
-        throw new UnsupportedOperationException(
-                "Not implemented"
+        requireActive();
+
+        List<ScoreAward> awards = scoringRules.endGameAwards(
+                board,
+                meeples
         );
+
+        applyAwards(awards);
     }
 
     /**
      * Soma os pontos aos recebedores e devolve os meeples
      * das regiões pontuadas.
-     *
-     * Continua público temporariamente neste PR.
-     * Será tornado privado no PR2.
      */
     private void applyAwards(List<ScoreAward> awards) {
         for (ScoreAward award : awards) {
