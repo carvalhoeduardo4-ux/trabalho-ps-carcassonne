@@ -1,6 +1,7 @@
 package com.carcassonne.domain.game;
 
 import com.carcassonne.domain.board.PlacedTile;
+import com.carcassonne.domain.exception.InvalidTurnPhaseException;
 import com.carcassonne.domain.tile.Tile;
 import lombok.AccessLevel;
 import lombok.Setter;
@@ -17,6 +18,37 @@ public class Turn {
     @Setter(AccessLevel.PACKAGE)
     private PlacedTile placedTile;   // 0..1
     private boolean meepleResolved;
+    private boolean completedFeaturesScored;
+
+    /** Snapshot independente, compartilhando somente peças imutáveis e estados sem dados. */
+    public Turn copy() {
+        Turn copy = new Turn();
+        copy.state = state;
+        copy.drawnTile = drawnTile;
+        copy.placedTile = placedTile;
+        copy.meepleResolved = meepleResolved;
+        copy.completedFeaturesScored = completedFeaturesScored;
+        return copy;
+    }
+
+    void requireCompletedScoring() {
+        state.requireMeepleDecision();
+        if (!meepleResolved || completedFeaturesScored) {
+            throw new InvalidTurnPhaseException(
+                    "Pontuação exige decisão de meeple resolvida e ainda não pontuada.");
+        }
+    }
+
+    void recordCompletedScoring() {
+        requireCompletedScoring();
+        completedFeaturesScored = true;
+    }
+
+    void requireCompletedScored() {
+        if (!completedFeaturesScored) {
+            throw new InvalidTurnPhaseException("A pontuação deste turno ainda não foi resolvida.");
+        }
+    }
 
     public void requireDrawTile() {
         state.requireDrawTile();
@@ -59,6 +91,7 @@ public class Turn {
         this.drawnTile = null;
         this.placedTile = null;
         this.meepleResolved = false;
+        this.completedFeaturesScored = false;
     }
 
     public TurnState getState() {

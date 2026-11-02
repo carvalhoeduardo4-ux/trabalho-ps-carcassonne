@@ -22,7 +22,6 @@ import com.carcassonne.domain.rules.ScoringRules;
 import lombok.Getter;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,6 +46,7 @@ public class Game {
 
     private int currentPlayerIndex;
     private GameStatus status = GameStatus.ACTIVE;
+    private boolean endGameScored;
 
     /**
      * Cria e inicializa uma nova partida utilizando as implementações
@@ -117,7 +117,7 @@ public class Game {
                 "ScoringRules não pode ser nulo."
         );
 
-        this.players = new ArrayList<>(players);
+        this.players = players.stream().map(Game::copyPlayer).toList();
         this.board = new Board();
 
         this.deck = new TileDeck(
@@ -210,18 +210,18 @@ public class Game {
                 "ScoringRules não pode ser nulo."
         );
 
-        this.players = new ArrayList<>(players);
+        this.players = players.stream().map(Game::copyPlayer).toList();
 
         this.board = board != null
-                ? board
+                ? board.copy()
                 : new Board();
 
         this.deck = deck != null
-                ? deck
+                ? new TileDeck(deck.getRemainingTiles())
                 : new TileDeck(StandardTiles.createStandardDrawTiles());
 
         this.turn = turn != null
-                ? turn
+                ? turn.copy()
                 : new Turn();
 
         this.status = GameStatus.ACTIVE;
@@ -270,7 +270,7 @@ public class Game {
             return null;
         }
 
-        return players.get(currentPlayerIndex);
+        return copyPlayer(players.get(currentPlayerIndex));
     }
 
     public Optional<Tile> currentDrawnTile() {
@@ -415,7 +415,7 @@ public class Game {
         requireActive();
         turn.requireMeepleDecision();
 
-        Player player = currentPlayer();
+        Player player = players.get(currentPlayerIndex);
 
         if (availableMeeples(player) <= 0) {
             return List.of();
@@ -464,7 +464,7 @@ public class Game {
             );
         }
 
-        Player player = currentPlayer();
+        Player player = players.get(currentPlayerIndex);
 
         if (availableMeeples(player) <= 0) {
             throw new InvalidMeeplePlacementException(
@@ -505,6 +505,8 @@ public class Game {
 
     public void scoreCompletedFeatures() {
         requireActive();
+        requireNotEndGameScored();
+        turn.requireCompletedScoring();
 
         PlacedTile placedTile = currentPlacedTile()
                 .orElseThrow(
@@ -520,6 +522,7 @@ public class Game {
         );
 
         applyAwards(awards);
+        turn.recordCompletedScoring();
     }
 
     /**
@@ -531,6 +534,16 @@ public class Game {
      */
     public void scoreEndGame() {
         requireActive();
+        requireNotEndGameScored();
+        if (hasTilesRemaining()) {
+            throw new InvalidTurnPhaseException("Ainda há peças no monte.");
+        }
+        if (currentPlacedTile().isPresent()) {
+            turn.requireCompletedScored();
+        } else {
+            // Monte vazio após descarte, sem peça ou decisão pendente.
+            turn.requireDrawTile();
+        }
 
         List<ScoreAward> awards = scoringRules.endGameAwards(
                 board,
@@ -538,6 +551,13 @@ public class Game {
         );
 
         applyAwards(awards);
+        endGameScored = true;
+    }
+
+    private void requireNotEndGameScored() {
+        if (endGameScored) {
+            throw new InvalidTurnPhaseException("A pontuação final já foi aplicada.");
+        }
     }
 
     /**
@@ -574,6 +594,12 @@ public class Game {
     }
 
     public void nextPlayer() {
+        requireActive();
+        requireNotEndGameScored();
+        turn.requireCompletedScored();
+        if (!hasTilesRemaining()) {
+            throw new InvalidTurnPhaseException("O monte acabou; a partida deve ser encerrada.");
+        }
         currentPlayerIndex =
                 (currentPlayerIndex + 1) % players.size();
 
@@ -581,6 +607,10 @@ public class Game {
     }
 
     public void finish() {
+        requireActive();
+        if (!endGameScored) {
+            throw new InvalidTurnPhaseException("A pontuação final deve ser resolvida antes de encerrar.");
+        }
         this.status = GameStatus.FINISHED;
     }
 
@@ -600,6 +630,7 @@ public class Game {
                         player ->
                                 player.getScore() == highestScore
                 )
+                .map(Game::copyPlayer)
                 .toList();
     }
 
@@ -608,15 +639,15 @@ public class Game {
     // =====================================================
 
     public Board getBoard() {
-        return board;
+        return board.copy();
     }
 
     public TileDeck getDeck() {
-        return deck;
+        return new TileDeck(deck.getRemainingTiles());
     }
 
     public Turn getTurn() {
-        return turn;
+        return turn.copy();
     }
 
     public GameStatus getStatus() {
@@ -628,14 +659,16 @@ public class Game {
     }
 
     public List<Player> getPlayers() {
-        return Collections.unmodifiableList(
-                players
-        );
+        return players.stream().map(Game::copyPlayer).toList();
     }
 
     public List<MeeplePlacement> getMeeples() {
-        return Collections.unmodifiableList(
-                meeples
-        );
+        return meeples.stream()
+                .map(meeple -> new MeeplePlacement(copyPlayer(meeple.getPlayer()), meeple.getFeature()))
+                .toList();
+    }
+
+    private static Player copyPlayer(Player player) {
+        return new Player(player.getName(), player.getColor(), player.getScore());
     }
 }

@@ -51,6 +51,10 @@ com.carcassonne
 
 Estado para exibição: `GameEngine.getGame()` devolve o `Game`, com `getBoard()`, `getPlayers()`, `currentPlayer()`, `getStatus()`, `getMeeples()`, `availableMeeples(player)`, `getDeck().remaining()`, `currentDrawnTile()` e `currentPlacedTile()`.
 
+`Game` copia os componentes mutáveis recebidos nos construtores. As consultas de tabuleiro, monte, turno e jogadores retornam snapshots independentes, incluindo jogadores acessíveis por meeples e vencedores. Alterar uma cópia não modifica a partida; para obter o estado atualizado é necessário consultar novamente. Peças e sua geometria são imutáveis e podem ser compartilhadas entre snapshots.
+
+Nas chamadas diretas ao domínio, `scoreCompletedFeatures()` exige uma decisão de meeple resolvida e só pode executar uma vez por turno. `nextPlayer()` exige essa pontuação e peças restantes. Com o monte vazio, `scoreEndGame()` aceita o último turno já pontuado ou a fase de compra sem peça pendente, inclusive após descartar a última peça impossível. A pontuação final ocorre uma única vez e deve preceder `finish()`. Chamadas fora dessa sequência lançam `InvalidTurnPhaseException` antes de alterar o estado. O `GameEngine` coordena essa sequência sem mudar os DTOs ou as fases HTTP existentes.
+
 ### Fluxo de um turno
 
 ```mermaid

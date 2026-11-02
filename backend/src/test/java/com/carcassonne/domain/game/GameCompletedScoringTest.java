@@ -146,12 +146,12 @@ class GameCompletedScoringTest {
          */
         assertEquals(
                 2,
-                alice.getScore()
+                game.getPlayers().get(0).getScore()
         );
 
         assertEquals(
                 0,
-                bob.getScore()
+                game.getPlayers().get(1).getScore()
         );
 
         /*

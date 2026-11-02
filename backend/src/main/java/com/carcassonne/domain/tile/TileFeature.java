@@ -1,6 +1,5 @@
 package com.carcassonne.domain.tile;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,7 +14,7 @@ public class TileFeature {
         this.id = id;
         this.type = type;
         this.shieldCount = shieldCount;
-        this.edgeContacts = edgeContacts != null ? Collections.unmodifiableList(edgeContacts) : Collections.emptyList();
+        this.edgeContacts = edgeContacts != null ? List.copyOf(edgeContacts) : List.of();
     }
 
     public int getId() {

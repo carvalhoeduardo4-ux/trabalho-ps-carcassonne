@@ -66,6 +66,7 @@ public class GameEngine implements GameInputPort {
     @Override
     public Optional<Tile> drawTile() {
         Game g = requireGame();
+        g.getTurn().requireDrawTile();
         boolean replacementRequired = true;
         while (replacementRequired) {
             if (!g.hasTilesRemaining()) {
@@ -131,4 +132,3 @@ public class GameEngine implements GameInputPort {
         g.finish();
     }
 }
-

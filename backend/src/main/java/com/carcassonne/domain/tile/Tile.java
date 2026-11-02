@@ -1,7 +1,5 @@
 package com.carcassonne.domain.tile;
 
-import lombok.RequiredArgsConstructor;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -14,8 +12,8 @@ public class Tile {
 
     public Tile(String id, List<TileFeature> features, List<FieldCityAdjacency> fieldCityAdjacencies) {
         this.id = id != null ? id : "UNKNOWN";
-        this.features = features != null ? features : List.of();
-        this.fieldCityAdjacencies = fieldCityAdjacencies != null ? fieldCityAdjacencies : List.of();
+        this.features = features != null ? List.copyOf(features) : List.of();
+        this.fieldCityAdjacencies = fieldCityAdjacencies != null ? List.copyOf(fieldCityAdjacencies) : List.of();
     }
 
     public Tile(String id, List<TileFeature> features) {

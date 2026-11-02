@@ -113,16 +113,17 @@ class GameEndGameScoringTest {
                 game.getMeeples().size()
         );
 
+        game.scoreCompletedFeatures();
         game.scoreEndGame();
 
         assertEquals(
                 2,
-                alice.getScore()
+                game.getPlayers().get(0).getScore()
         );
 
         assertEquals(
                 0,
-                bob.getScore()
+                game.getPlayers().get(1).getScore()
         );
 
         assertEquals(
@@ -267,6 +268,7 @@ class GameEndGameScoringTest {
                 game.availableMeeples(alice)
         );
 
+        game.scoreCompletedFeatures();
         game.scoreEndGame();
 
         /*
@@ -275,12 +277,12 @@ class GameEndGameScoringTest {
          */
         assertEquals(
                 3,
-                alice.getScore()
+                game.getPlayers().get(0).getScore()
         );
 
         assertEquals(
                 0,
-                bob.getScore()
+                game.getPlayers().get(1).getScore()
         );
 
         assertEquals(

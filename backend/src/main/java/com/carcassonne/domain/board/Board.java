@@ -18,6 +18,12 @@ public class Board {
 
     private final Map<Position, PlacedTile> tiles = new HashMap<>();
 
+    public Board copy() {
+        Board copy = new Board();
+        copy.tiles.putAll(tiles);
+        return copy;
+    }
+
     public boolean isOccupied(Position position) {
         return tileAt(position).isPresent();
     }
