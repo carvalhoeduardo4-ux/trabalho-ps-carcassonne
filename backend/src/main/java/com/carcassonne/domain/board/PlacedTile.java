@@ -16,8 +16,8 @@ public class PlacedTile {
     private final Placement placement;
 
     public PlacedTile(Tile tile, Placement placement) {
-        this.tile = tile;
-        this.placement = placement;
+        this.tile = Objects.requireNonNull(tile, "Tile não pode ser nulo.");
+        this.placement = Objects.requireNonNull(placement, "Placement não pode ser nulo.");
     }
 
     public Tile getTile() {

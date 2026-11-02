@@ -12,13 +12,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -47,18 +42,11 @@ class PlacedTileTest {
     }
 
     @Test
-    void shouldKeepOnlyPrivateFinalTileAndPlacementState() {
-        Map<String, Field> fields = Arrays.stream(PlacedTile.class.getDeclaredFields())
-                .filter(field -> !Modifier.isStatic(field.getModifiers()))
-                .collect(Collectors.toMap(Field::getName, field -> field));
+    void shouldRejectNullConstructorArguments() {
+        Placement placement = new Placement(new Position(0, 0), Rotation.DEG_0);
 
-        assertEquals(Set.of("tile", "placement"), fields.keySet());
-        assertEquals(Tile.class, fields.get("tile").getType());
-        assertEquals(Placement.class, fields.get("placement").getType());
-        for (Field field : fields.values()) {
-            assertTrue(Modifier.isPrivate(field.getModifiers()), field.getName());
-            assertTrue(Modifier.isFinal(field.getModifiers()), field.getName());
-        }
+        assertThrows(NullPointerException.class, () -> new PlacedTile(null, placement));
+        assertThrows(NullPointerException.class, () -> new PlacedTile(tile, null));
     }
 
     @ParameterizedTest

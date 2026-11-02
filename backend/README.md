@@ -15,6 +15,11 @@ mvn spring-boot:run # sobe a aplicação
 
 Com JDK 25 é preciso: `-Dlombok.version=1.18.46 -Dmaven.compiler.proc=full` (o Lombok do Spring Boot 3.3.5 não funciona no JDK 25 e a JDK 23+ desliga processadores de anotação por padrão).
 
+### Validação do backend
+
+Com JDK 17, Maven, Bash e Python 3, execute `./backend/scripts/verify-backend.sh` na raiz. O gate roda `mvn verify` e `./backend/scripts/smoke-backend.sh`.
+Após um build, use `./backend/scripts/smoke-backend.sh` para repetir apenas o fluxo HTTP real.
+
 ## Arquitetura
 
 ```

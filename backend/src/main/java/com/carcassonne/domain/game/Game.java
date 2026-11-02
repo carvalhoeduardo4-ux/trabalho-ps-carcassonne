@@ -19,7 +19,6 @@ import com.carcassonne.domain.tile.StandardTiles;
 import com.carcassonne.domain.tile.Tile;
 import com.carcassonne.domain.tile.TileDeck;
 import com.carcassonne.domain.rules.ScoringRules;
-import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,6 @@ import java.util.Optional;
 /**
  * Aggregate root / GRASP Information Expert.
  */
-@Getter
 public class Game {
 
     public static final int INITIAL_MEEPLES_PER_PLAYER = 7;
