@@ -39,7 +39,9 @@ export function GameBoard({
   currentPlayerIndex = 0,
   showCoords = false,
   onToggleCoords,
-  turnNotice = null
+  turnNotice = null,
+  readOnly = false,  // vez da IA: nenhuma casa aceita clique
+  aiTarget = null    // { x, y } onde a IA vai colocar a peça
 }) {
   const boardRef = useRef(null);
   const [flashKey, setFlashKey] = useState(null); // célula que acabou de receber um clique inválido
@@ -112,6 +114,13 @@ export function GameBoard({
     centerBoard(false);
   }, []);
 
+  // Garante que a jogada escolhida pela IA fique visível
+  useEffect(() => {
+    if (!aiTarget || !boardRef.current) return;
+    const target = boardRef.current.querySelector(`[data-key="${keyOf(aiTarget.x, aiTarget.y)}"]`);
+    if (target) target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }, [aiTarget]);
+
   const changeZoom = (delta) => {
     const el = boardRef.current;
     // guarda o ponto central para não "pular" ao mudar o zoom
@@ -168,13 +177,15 @@ export function GameBoard({
     for (let x = bounds.minX; x <= bounds.maxX; x++) {
       const key = keyOf(x, y);
       const placedTile = tilesByKey.get(key);
-      const isValidSlot = phase === 'PLACE_TILE' && validMap.has(key);
-      const rejectsClick = phase === 'PLACE_TILE' && !isValidSlot;
+      const isValidSlot = !readOnly && phase === 'PLACE_TILE' && validMap.has(key);
+      const rejectsClick = !readOnly && phase === 'PLACE_TILE' && !isValidSlot;
+      const isAiTarget = !!aiTarget && aiTarget.x === x && aiTarget.y === y && !placedTile;
       const classes = ['grid-cell'];
       if (rejectsClick) classes.push('grid-cell-blocked');
       if (flashKey === key) classes.push('invalid-flash');
       if (scoredKeys.includes(key)) classes.push('score-flash');
       if (key === lastPlacedKey && placedTile) classes.push('last-placed');
+      if (isAiTarget) classes.push('ai-target');
 
       cells.push(
         React.createElement('div', {
@@ -191,6 +202,10 @@ export function GameBoard({
             size: tileSize - 4,
             players: players,
             showLabel: showCoords
+          }) : isAiTarget ? React.createElement(TileSvg, {
+            highlightValid: true,
+            ghostTile: previewTile,
+            size: tileSize - 4
           }) : isValidSlot ? React.createElement(TileSvg, {
             highlightValid: true,
             ghostTile: hoverKey === key && !dragging ? previewTile : null,
@@ -216,7 +231,10 @@ export function GameBoard({
     React.createElement('div', { className: 'board-header-bar' },
       React.createElement('div', { className: 'board-stats' },
         React.createElement('span', { className: 'badge' }, `Peças no tabuleiro: ${board.length}`),
-        phase === 'PLACE_TILE' ? React.createElement('span', { className: 'badge badge-action' },
+        readOnly ? React.createElement('span', { className: 'badge badge-ai' },
+          React.createElement('span', { 'aria-hidden': 'true' }, '🤖 '),
+          'Computador jogando…'
+        ) : phase === 'PLACE_TILE' ? React.createElement('span', { className: 'badge badge-action' },
           `${validPlacements.length} ${validPlacements.length === 1 ? 'posição válida' : 'posições válidas'} nesta rotação`
         ) : null
       ),

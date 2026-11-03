@@ -9,3 +9,5 @@ export const placeTile = ({ x, y, rotation }) => post('/game/tile', { x, y, rota
 export const getMeepleOptions = () => get('/game/meeples');
 export const placeMeeple = ({ x, y, featureId }) => post('/game/meeple', { x, y, featureId });
 export const skipMeeple = () => post('/game/skip');
+/** Jogada sorteada pelo backend para o jogador atual (IA). Não altera o estado. */
+export const getAiDecision = () => get('/game/ai/decision');

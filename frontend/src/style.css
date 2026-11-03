@@ -1323,6 +1323,166 @@ h1, h2, h3, h4 {
   color: var(--text-muted);
 }
 
+.player-type-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border-wood);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.btn-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-wood-light);
+  border: none;
+  color: var(--text-secondary);
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-type + .btn-type {
+  border-left: 1px solid var(--border-wood);
+}
+
+.btn-type:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+.btn-type.active {
+  background: var(--gold);
+  color: var(--bg-main);
+  font-weight: 700;
+}
+
+.btn-type:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: -2px;
+}
+
+.setup-avatar-box {
+  position: relative;
+}
+
+.setup-ai-mark {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.form-note {
+  margin-top: -8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Selo "IA" no placar e no resultado */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-light);
+  border: 1px solid var(--border-gold);
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.badge-ai {
+  color: var(--gold-light);
+  border-color: var(--border-gold);
+}
+
+/* Casa escolhida pela IA, antes de a peça ser colocada */
+.grid-cell.ai-target::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--gold-light);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-gold);
+  pointer-events: none;
+  animation: aiTargetPulse 0.9s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes aiTargetPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* Status da vez da IA no painel do turno */
+.ai-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-wood);
+  border-radius: var(--radius-md);
+}
+
+.ai-status-error {
+  flex-direction: column;
+  align-items: stretch;
+  color: #f0a0a0;
+  border-color: rgba(168, 50, 50, 0.6);
+}
+
+.ai-spinner {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid var(--border-gold);
+  border-top-color: var(--gold-light);
+  border-radius: 50%;
+  animation: aiSpin 0.8s linear infinite;
+}
+
+@keyframes aiSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Linha do jogador: nome e cor em cima, Humano/IA embaixo (cabe no modal e no celular) */
+.player-setup-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 8px;
+}
+
+.player-setup-row .setup-avatar-box {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.player-setup-row .input-text {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.player-setup-row .input-select {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.player-setup-row .player-type-toggle {
+  grid-column: 2 / span 2;
+  grid-row: 2;
+  justify-self: start;
+}
+
 /* Narrow windows: HUD moves below the board, with its own scroll */
 @media (max-width: 900px) {
   .game-layout {

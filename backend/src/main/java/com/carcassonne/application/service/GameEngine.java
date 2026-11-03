@@ -46,7 +46,7 @@ public class GameEngine implements GameInputPort {
             if (setup == null) {
                 throw new IllegalArgumentException("PlayerSetup não pode ser nulo.");
             }
-            domainPlayers.add(new Player(setup.getName(), setup.getColor()));
+            domainPlayers.add(new Player(setup.getName(), setup.getColor(), setup.getType()));
         }
         this.game = new Game(
                 domainPlayers,
