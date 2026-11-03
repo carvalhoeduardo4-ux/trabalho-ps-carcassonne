@@ -1,0 +1,173 @@
+# Backend — Documentação
+
+Núcleo do jogo inspirado em Carcassonne (Java 17, Spring Boot 3.3). Toda a lógica de regras fica no domínio, independente de interface (RNF06).
+
+> [!NOTE]
+> **API REST implementada em `/api/game`.** O backend expõe os endpoints HTTP documentados abaixo com suporte a CORS e tratamento de exceções.
+
+## Executar
+
+```powershell
+cd backend
+mvn test            # compila e roda os testes
+mvn spring-boot:run # sobe a aplicação
+```
+
+Com JDK 25 é preciso: `-Dlombok.version=1.18.46 -Dmaven.compiler.proc=full` (o Lombok do Spring Boot 3.3.5 não funciona no JDK 25 e a JDK 23+ desliga processadores de anotação por padrão).
+
+### Validação do backend
+
+Com JDK 17, Maven, Bash e Python 3, execute `./backend/scripts/verify-backend.sh` na raiz. O gate roda `mvn verify` e `./backend/scripts/smoke-backend.sh`.
+Após um build, use `./backend/scripts/smoke-backend.sh` para repetir apenas o fluxo HTTP real.
+
+## Arquitetura
+
+```
+com.carcassonne
+├── application
+│   ├── port/in      GameInputPort, AiInputPort, PlayerSetup (portas de entrada hexagonais)
+│   └── service      GameEngine (controller; orquestra o turno), AiPlayerService (decisão da IA)
+└── domain
+    ├── ai           AiDecisionStrategy (Strategy), RandomDecisionStrategy, AiDecision, AiAction
+    ├── board        Board, PlacedTile, Position, Placement, FeatureRef, FeatureRegion
+    ├── game         Game (aggregate root), Turn + TurnState (State pattern), GameStatus
+    ├── player       Player, PlayerColor, PlayerType (HUMAN/AI), MeeplePlacement
+    ├── rules        TilePlacementRules, MeeplePlacementRules, ScoringRules,
+    │                FeatureConnectivity, *ScoringStrategy, ScoreAward
+    ├── tile         Tile, TileFeature, EdgeContact, Direction, EdgeLane, Rotation,
+    │                FeatureType, TileDeck, StandardTiles
+    └── exception    GameActionException e subclasses
+```
+
+- `GameEngine` é o único ponto de entrada que altera a partida. Ele consulta as regras (sem estado) e chama os comandos do `Game`. `AiPlayerService` (porta `AiInputPort`) só consulta a partida pela `GameInputPort` e decide a jogada da IA.
+- `Game` protege as transições; `Turn` controla a fase com o padrão State.
+- As regras recebem `Board`, `Tile` etc. e não dependem de `Game`.
+
+## Porta de entrada — `GameInputPort`
+
+| Método | Fase exigida | Retorno / efeito |
+|---|---|---|
+| `startGame(List<PlayerSetup>)` | — | Cria a partida (2–5 jogadores, cores distintas, 7 meeples cada). Peça inicial em (0,0). |
+| `drawTile()` | DRAW_TILE | `Optional<Tile>`. Descarta automaticamente peças sem colocação legal. Vazio ⇒ monte esgotado e partida `FINISHED`. |
+| `getLegalPlacements()` | PLACE_TILE | `List<Placement>` (posição + rotação) |
+| `placeTile(Placement)` | PLACE_TILE | Posiciona a peça. `InvalidPlacementException` se ilegal. |
+| `getLegalMeepleFeatures()` | PLACE_MEEPLE | `List<FeatureRef>`; vazia se o jogador não tem meeples |
+| `placeMeeple(FeatureRef)` | PLACE_MEEPLE | Coloca o meeple e **resolve o turno**. `InvalidMeeplePlacementException` se ilegal. |
+| `skipMeeple()` | PLACE_MEEPLE | Pula o meeple e **resolve o turno** |
+
+Estado para exibição: `GameEngine.getGame()` devolve o `Game`, com `getBoard()`, `getPlayers()`, `currentPlayer()`, `getStatus()`, `getMeeples()`, `availableMeeples(player)`, `getDeck().remaining()`, `currentDrawnTile()` e `currentPlacedTile()`.
+
+`Game` copia os componentes mutáveis recebidos nos construtores. As consultas de tabuleiro, monte, turno e jogadores retornam snapshots independentes, incluindo jogadores acessíveis por meeples e vencedores. Alterar uma cópia não modifica a partida; para obter o estado atualizado é necessário consultar novamente. Peças e sua geometria são imutáveis e podem ser compartilhadas entre snapshots.
+
+Nas chamadas diretas ao domínio, `scoreCompletedFeatures()` exige uma decisão de meeple resolvida e só pode executar uma vez por turno. `nextPlayer()` exige essa pontuação e peças restantes. Com o monte vazio, `scoreEndGame()` aceita o último turno já pontuado ou a fase de compra sem peça pendente, inclusive após descartar a última peça impossível. A pontuação final ocorre uma única vez e deve preceder `finish()`. Chamadas fora dessa sequência lançam `InvalidTurnPhaseException` antes de alterar o estado. O `GameEngine` coordena essa sequência sem mudar os DTOs ou as fases HTTP existentes.
+
+### Fluxo de um turno
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAW_TILE
+    DRAW_TILE --> PLACE_TILE: drawTile (peça jogável)
+    PLACE_TILE --> PLACE_MEEPLE: placeTile
+    PLACE_MEEPLE --> DRAW_TILE: placeMeeple / skipMeeple\n(pontua, passa a vez)
+    PLACE_MEEPLE --> [*]: monte esgotado (FINISHED)
+```
+
+Sequência típica do cliente: `drawTile → getLegalPlacements → placeTile → getLegalMeepleFeatures → placeMeeple | skipMeeple`. Ao final de `placeMeeple`/`skipMeeple` o engine pontua estruturas concluídas, devolve meeples, avança o jogador (ou encerra a partida).
+
+### Erros
+
+| Exceção | Quando |
+|---|---|
+| `InvalidTurnPhaseException` | Ação fora da fase, decisão de meeple repetida ou partida já encerrada |
+| `InvalidPlacementException` | Peça em posição/rotação ilegal |
+| `InvalidMeeplePlacementException` | Meeple em região ocupada, fora da peça do turno ou sem meeples |
+| `IllegalStateException` | Nenhuma partida iniciada |
+| `IllegalArgumentException` | Dados inválidos (jogadores, cores) |
+| `NotAiPlayerTurnException` | Decisão da IA pedida na vez de um humano |
+| `AiDecisionException` | Defeito interno da IA (não é erro de regra; HTTP 500) |
+
+Todas as `GameActionException` são erros de regra: o frontend deve mapeá-las para HTTP 4xx (ex.: 409/422), mantendo o estado inalterado.
+
+## Modelo de dados (para montar DTOs)
+
+| Tipo | Campos |
+|---|---|
+| `Position` | `x`, `y` — **NORTH = y+1**, EAST = x+1 |
+| `Rotation` | `DEG_0`, `DEG_90`, `DEG_180`, `DEG_270` (sentido **horário**) |
+| `Placement` | `position`, `rotation` |
+| `Tile` | `id`, `features: List<TileFeature>` |
+| `TileFeature` | `id`, `type` (CITY/ROAD/MONASTERY/FIELD), `shieldCount`, `edgeContacts` |
+| `EdgeContact` | `side` (NORTH/EAST/SOUTH/WEST), `lane` (LEFT/CENTER/RIGHT) — lados **sem rotação** (da peça original) |
+| `PlacedTile` | `tile`, `placement` (construtor `PlacedTile(Tile, Placement)`; getters de posição e rotação delegados a `Placement`) |
+| `FeatureRef` | `position`, `featureId` — identifica uma feature numa peça posicionada |
+| `MeeplePlacement` | `player`, `feature` (`FeatureRef`) |
+| `Player` | `name`, `color`, `type` (HUMAN/AI), `score` |
+| `PlayerColor` | RED, BLUE, GREEN, YELLOW, BLACK |
+
+### Notas para renderizar o tabuleiro
+- Rotacione a imagem da peça em `rotation` graus no sentido horário. Um lado local `s` aparece em `s.rotate(rotation)`.
+- `Tile.id` é exposto como `tileId` nos DTOs para o frontend escolher o sprite correspondente.
+- `Board.getTiles()` devolve todas as peças; o tabuleiro é esparso e cresce em qualquer direção (coordenadas negativas são válidas).
+- Meeple: use `FeatureRef` para posicionar o marcador na peça (a posição visual dentro da peça é responsabilidade do frontend).
+
+## Regras implementadas
+
+| Regra | Onde |
+|---|---|
+| Posição livre, ≥ 1 vizinho ortogonal, bordas compatíveis (RN01–RN03) | `TilePlacementRules` |
+| Compatibilidade de borda | Tipo da feature na lane CENTER (ou LEFT/RIGHT se ausente) |
+| Meeple só na peça do turno, região sem meeple (RN05, RN06) | `Game.placeMeeple`, `MeeplePlacementRules` |
+| Regiões conectadas por BFS e detecção de conclusão | `FeatureConnectivity` |
+| Maioria e empate de meeples (RN09) | `ScoringRules` |
+| Pontuação ao completar (RN07) e retorno de meeples (RN08) | `ScoringRules` + `Game.applyAwards` |
+| Pontuação final de estruturas incompletas e campos | `Game.scoreEndGame` + `*ScoringStrategy` |
+| Vencedor ou vencedores empatados | `Game.winners` |
+
+Pontuação ao completar: **estrada** = 1/peça · **cidade** = 2/peça + 2/escudo · **mosteiro** = 9.
+
+## API REST — `/api/game`
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/game` | Inicia partida (`StartGameRequest`) |
+| `GET` | `/api/game` | Retorna o estado completo (`GameStateDto`) |
+| `POST` | `/api/game/draw` | Sorteia próxima peça jogável |
+| `GET` | `/api/game/placements` | Lista posições e rotações legais |
+| `POST` | `/api/game/tile` | Posiciona a peça (`PlacementRequest`) |
+| `GET` | `/api/game/meeples` | Lista opções de meeple elegíveis |
+| `POST` | `/api/game/meeple` | Aloca meeple na peça (`MeepleRequest`) |
+| `POST` | `/api/game/skip` | Pula meeple e resolve o turno |
+| `GET` | `/api/game/ai/decision` | Jogada sorteada para o jogador atual, se for IA (`AiDecisionDto`). Não altera o estado. 409 na vez de um humano (`NotAiPlayerTurnException`) ou com a partida encerrada; 500 (`AiDecisionException`) em defeito interno da IA |
+
+`PlayerRequest` aceita o campo opcional `type` (`HUMAN` padrão, ou `AI`); valor inválido retorna 400. `PlayerDto` expõe `type`.
+
+### Jogador controlado pelo computador (IA aleatória)
+
+Na vez de um jogador `AI`, o cliente chama `GET /api/game/ai/decision` e aplica a resposta pelo endpoint correspondente:
+
+| `action` | Campo | Aplicar com |
+|---|---|---|
+| `DRAW_TILE` | — | `POST /api/game/draw` |
+| `PLACE_TILE` | `placement` (`PlacementDto`: `x`, `y`, `rotation`) | `POST /api/game/tile` |
+| `PLACE_MEEPLE` | `feature` (`FeatureRefDto`: `x`, `y`, `featureId`) | `POST /api/game/meeple` |
+| `SKIP_MEEPLE` | — | `POST /api/game/skip` |
+
+A escolha é sempre feita entre as opções legais da fase; o endpoint apenas decide e os comandos continuam passando pela mesma API usada pelo jogador humano.
+
+## Pendências e Próximos Passos
+
+- [x] **Camada REST** (controller + DTOs), expondo os 7 métodos de `GameInputPort` e estado da partida.
+- [x] **CORS** e tratamento global de exceções (`@RestControllerAdvice`) para `GameActionException`.
+- [x] **Identificador de peça** (`tileId`) nas 72 peças padrão.
+- [ ] **Estado compartilhado:** `GameEngine` é um singleton Spring com **uma única partida** (campo `game`). Para várias partidas simultâneas é preciso um repositório por id.
+- [x] **Fim de jogo completo:** `finishGame()` aplica `scoreEndGame()` antes de marcar `FINISHED`; inclui estruturas incompletas, campos e consulta aos vencedores empatados por `winners()`.
+- [ ] Os dados de `StandardTiles` descrevem poucas lanes por borda; a conectividade de campos pode exigir ajustes.
+
+## Testes
+
+`backend/src/test/java/.../application/service/`:
+- `GameInitializationTest` — criação da partida.
+- `GameTurnFlowTest` — rotação/bordas, ordem das fases, colocação inválida e partida completa até esgotar o monte.
+- `AiPlayerServiceTest` — decisões da IA por fase, rejeições (sem partida, vez de humano, estratégia ilegal) e partida completa entre duas IAs.
+
+Outros: `domain/ai/RandomDecisionStrategyTest` (sorteio, cenário de rotação, justiça entre posições) e `api/AiControllerTest` (endpoint da IA e campo `type`).

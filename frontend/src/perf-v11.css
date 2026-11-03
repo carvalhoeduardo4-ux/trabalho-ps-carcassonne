@@ -1,0 +1,35 @@
+/* Isola somente os overlays transitórios; as centenas de tiles não recebem
+   will-change nem uma promoção indiscriminada para camadas. */
+.meeple-ghost-layer {
+  position: absolute;
+  inset: 2px;
+  z-index: 7;
+  overflow: hidden;
+  pointer-events: none;
+  contain: layout paint style;
+  transform: translateZ(0);
+}
+
+.meeple-ghost-icon {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  opacity: .6;
+}
+
+.meeple-ghost-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Há no máximo um alvo de IA. O hint permite ao navegador compor a animação
+   de opacidade sem promover indiscriminadamente as tiles. */
+.grid-cell.ai-target::before {
+  will-change: opacity;
+}
+
+/* O ghost de encaixe que já estava montado não reaparece durante o pan. */
+.board-scroll-container.is-dragging .tile-ghost {
+  visibility: hidden;
+}

@@ -1,0 +1,401 @@
+/* Carcassonne UI v9 · acabamento medieval rústico, camada isolada.
+   NÃO modifica ilustrações, SVGs, formas, tamanhos nem posição dos meeples.
+   Carregado DEPOIS de style.css; não substitui o layout ou regras de interação. */
+:root {
+  --v9-ink: #382315;
+  --v9-ink-soft: #6d4b2a;
+  --v9-cream: #f6e3bb;
+  --v9-paper: #e6c898;
+  --v9-gold: #d7a64e;
+  --v9-gold-bright: #f8d47e;
+  --v9-wood: #302018;
+  --v9-stroke: #7e5129;
+  --v9-shadow: 0 3px 0 #170e08, 0 8px 18px #170f0bbb;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
+}
+body { background: #1f140d; }
+.app-root { background: #28170f; }
+
+/* Faixa superior de madeira entalhada. */
+.app-navbar {
+  height: 60px;
+  min-height: 60px;
+  padding: 0 21px;
+  background-image:
+    linear-gradient(180deg, #28140971 0%, transparent 33%, #0f070653 100%),
+    url('./assets/v9/old-wood.webp');
+  background-size: auto, 560px auto;
+  border-bottom: 3px double #b48843;
+  box-shadow: inset 0 1px #a8794e, inset 0 -5px #140b0685, 0 3px 12px #100904b0;
+}
+.nav-brand { gap: 13px; min-width: 0; }
+.brand-icon { font-size: 26px; filter: sepia(.4) drop-shadow(1px 2px 1px #090706); }
+.brand-title {
+  font-family: 'Cinzel', Georgia, serif;
+  color: #f0c87b;
+  font-size: clamp(17px, 1.6vw, 27px);
+  letter-spacing: .015em;
+  font-weight: 800;
+  text-shadow: 1px 2px #2b140b, -1px -1px #a46d3a, 0 0 8px #150904;
+}
+.brand-subtitle {
+  border-radius: 3px;
+  padding: 5px 12px;
+  color: #eec26b;
+  border: 1px solid #b98643;
+  background: linear-gradient(180deg,#59301b,#321b11);
+  box-shadow: inset 0 0 0 2px #2c190b, 0 1px #c28b4a;
+  font-family: 'Cinzel', Georgia, serif;
+  letter-spacing: .045em;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* A superfície continua rolável e clicável; toda decoração é pointer-events:none. */
+.board-area {
+  isolation: isolate;
+  background-color: #e7caa1;
+  background-image:
+    linear-gradient(90deg,#88633c33,transparent 4%,transparent 96%,#88633c33),
+    linear-gradient(180deg,#b9955a32,transparent 6%,transparent 93%,#9d754f36),
+    url('./assets/v9/corner-ornament.svg'),
+    url('./assets/v9/corner-ornament.svg'),
+    url('./assets/v9/castle-engraving.svg'),
+    url('./assets/v9/windmill-engraving.svg'),
+    url('./assets/v9/parchment.webp');
+  background-repeat: no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,repeat;
+  background-position: center,center,10px 66px,calc(100% - 10px) calc(100% - 10px),13px bottom,calc(100% - 10px) bottom,0 0;
+  background-size: 100% 100%,100% 100%,150px 150px,150px 150px,205px auto,225px auto,410px 410px;
+}
+.board-area::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 8px;
+  z-index: 0;
+  border: 1px solid #845c317c;
+  box-shadow: inset 0 0 0 3px #ffefd252, inset 0 0 16px #78503232;
+}
+.board-wrapper { z-index: 1; }
+.board-header-bar {
+  background-image: linear-gradient(180deg, #f9e6c9e8, #d8b68cde), url('./assets/v9/parchment.webp');
+  background-size: auto, 380px auto;
+  border-bottom: 2px solid #b18451;
+  box-shadow: 0 3px 10px #63462336, inset 0 1px #fff4d9;
+  padding: 7px 16px;
+  min-height: 45px;
+}
+.empty-grid-slot {
+  background: #aa885d0a;
+  border: 1px solid #80633d1e;
+}
+.valid-slot {
+  border: 2px dashed #73502b;
+  background: #efc86e29;
+  box-shadow: inset 0 0 12px #8761331c;
+}
+.valid-slot:hover { background: #edb94c4c; border-color: #745024; }
+.valid-plus-icon { color: #744a25; text-shadow: 0 1px #fff2cd; }
+
+/* Controles táteis. Não altera handlers, disabled ou áreas dos meeples. */
+.btn, .rotation-option, .btn-count {
+  font-family: 'Inter',system-ui,sans-serif;
+  font-weight: 700;
+  border-radius: 4px;
+}
+.btn:focus-visible, .rotation-option:focus-visible, .btn-count:focus-visible,
+.input-select:focus-visible, .input-text:focus-visible {
+  outline: 3px solid #f7c05b;
+  outline-offset: 2px;
+}
+.btn-primary {
+  color: #382006;
+  text-shadow: 0 1px #f9e1a2;
+  border: 1px solid #8d591f;
+  background: linear-gradient(180deg, #ffdf89 0%, #ecc052 27%, #c58a2b 86%, #a76b1c 100%);
+  box-shadow: inset 0 2px #fff0b8, inset 0 -2px #835217, 0 2px 4px #160c096b;
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffe79d,#f3c969 52%,#bc842e);
+  transform: translateY(-1px);
+  box-shadow: inset 0 2px #fff7c9, inset 0 -2px #795018, 0 4px 10px #190b085b;
+}
+.btn-secondary {
+  border: 1px solid #9d6b39;
+  background: linear-gradient(180deg,#593c28,#352016);
+  box-shadow: inset 0 1px #8c6443, 0 2px #190c08;
+}
+.btn-outline {
+  color: #f5d9a9;
+  background: linear-gradient(180deg,#67402a,#3b2417);
+  border: 1px solid #9c6838;
+  box-shadow: inset 0 1px #ae7449, 0 1px #1c110a;
+}
+.btn-outline:hover:not(:disabled) {
+  color: #fff0c5;
+  background: linear-gradient(180deg,#805237,#4a2b18);
+  border-color: #e2b15f;
+}
+.board-header-bar .btn-outline {
+  color: #492c17;
+  border: 1px solid #967042;
+  background: linear-gradient(180deg,#f7e2bd,#dbbb89);
+  box-shadow: inset 0 1px #fff4db, 0 2px 2px #74513148;
+}
+.board-header-bar .btn-outline:hover:not(:disabled) {
+  color: #3d2214;
+  border-color: #6f4926;
+  background: linear-gradient(180deg,#fff0ce,#dfba7e);
+}
+.badge {
+  border: 1px solid #9c7448;
+  border-radius: 5px;
+  padding: 5px 12px;
+  background: linear-gradient(180deg,#64442e,#392319);
+  color: #f9e3b8;
+  box-shadow: inset 0 1px #a47a4f, 0 2px 3px #4f2b176b;
+  font-weight: 700;
+}
+.badge-action {
+  color: #ffda7c;
+  border-color: #c18b37;
+  background: linear-gradient(180deg,#67401d,#402411);
+}
+
+/* Madeira da caixa lateral: pilastras, ornamentos e molduras. */
+.sidebar-area {
+  width: 356px;
+  gap: 13px;
+  padding: 14px 13px 18px;
+  border-left: 4px ridge #b28950;
+  background-color: #2b170f;
+  background-image:
+    linear-gradient(90deg, #130903b9 0%, transparent 8%, transparent 91%, #120804bc 100%),
+    url('./assets/v9/old-wood.webp');
+  background-size: auto, 390px 220px;
+  box-shadow: inset 4px 0 2px #1c0c06, inset -4px 0 2px #1c0c06, -5px 0 14px #26150a7a;
+}
+.card {
+  border-radius: 6px;
+  background-color: #3d2417;
+  background-image: linear-gradient(145deg,#65402862,transparent 38%,#190c0755),url('./assets/v9/old-wood.webp');
+  background-size: auto,430px 260px;
+  border: 2px solid #936734;
+  outline: 1px solid #24120c;
+  box-shadow: inset 0 0 0 3px #23120a, inset 0 0 0 4px #83552d, 0 4px 9px #1007049b;
+  padding: 13px 14px;
+  gap: 13px;
+}
+.turn-panel.card { position: relative; padding-top: 16px; }
+.turn-panel.card::after {
+  content: '';
+  position: absolute;
+  height: 24px;
+  pointer-events: none;
+  top: -6px;
+  left: 11px;
+  right: 11px;
+  background: url('./assets/v9/corner-ornament.svg') left top / 41px 41px no-repeat;
+  opacity: .32;
+}
+.turn-header {
+  padding: 10px 10px 10px 8px;
+  background: linear-gradient(180deg,#edd2a2,#cb9f67);
+  border: 1px solid #8f5c2d;
+  box-shadow: inset 0 0 0 2px #f5dcaa7c, 0 2px 3px #1509069c;
+  border-radius: 3px;
+  min-height: 76px;
+}
+.player-indicator { border-left-width: 5px; padding-left: 10px; }
+.turn-label {
+  color: #704327;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .075em;
+  display: inline-block;
+  margin: -4px 0 4px -3px;
+  padding: 3px 12px 4px 9px;
+  color: #f4d2a4;
+  text-shadow: 0 1px #40130d;
+  background: linear-gradient(180deg,#93432b,#662819);
+  border: 1px solid #6b2b19;
+  box-shadow: inset 0 1px #b15a39, 0 2px 2px #5b331d44;
+  clip-path: polygon(0 0,100% 0,95% 50%,100% 100%,0 100%);
+}
+.player-name-current {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 18px;
+  font-weight: 900;
+  text-shadow: 0 1px #ffecbc, 0 1px 1px #5c3d2d69;
+}
+.deck-counter {
+  min-width: 68px;
+  padding: 8px 8px;
+  color: #f1d299;
+  background: linear-gradient(180deg,#4e301c,#2a190d);
+  border: 2px ridge #be8c45;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #1c0e07,0 1px 3px #210f0b99;
+}
+.deck-number { font-size: 25px; color: #f3c769; text-shadow: 0 2px #1b0d06; }
+.deck-label { color: #d7bb8a; font-size: 9px; }
+
+.drawn-tile-preview {
+  padding: 6px;
+  border-radius: 5px;
+  border: 2px solid #a37126;
+  background: linear-gradient(135deg,#f1cd75,#9b5f1d 55%,#c7953b);
+  box-shadow: inset 0 0 0 2px #ffefb475,0 5px 13px #110a07b8;
+}
+.rotation-badge {
+  border-radius: 50%;
+  border: 2px solid #78511f;
+  padding: 3px 6px;
+  background: linear-gradient(180deg,#fff0c2,#d5a35c);
+  box-shadow: 0 1px 3px #150904;
+}
+.tile-info {
+  width: 100%;
+  border-radius: 4px;
+  padding: 9px 10px 10px;
+  color: var(--v9-ink);
+  background: linear-gradient(#fae5bbd9,#dfb980e8),url('./assets/v9/parchment.webp');
+  background-size: auto, 240px;
+  border: 1px solid #996937;
+  box-shadow: inset 0 0 0 2px #fff2cd8a, 0 2px 3px #160c0769;
+}
+.tile-name {
+  font-family:'Cinzel',Georgia,serif;
+  color: #573117;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .055em;
+  border-bottom: 1px solid #9f783f91;
+  padding-bottom: 5px;
+}
+.tile-help-text { color: #53361f; line-height: 1.43; font-size: 12px; }
+.turn-panel > .tile-help-text { color: #e4d0ab; }
+.rotate-buttons { gap: 8px; }
+.rotate-buttons .btn-outline { min-width: 45px; }
+.rotate-buttons .btn-primary { font-family:'Cinzel',Georgia,serif; font-size:13px; font-weight:800; }
+.options-label { color:#f4dbb0; font-family:Georgia,serif; font-size:13px; font-weight:700; }
+.rotation-option {
+  min-height: 43px;
+  border: 1px solid #a07849;
+  color: #eacb94;
+  background: linear-gradient(#4d2f1e,#321c12);
+  box-shadow: inset 0 1px #866143, 0 2px #1b0e0a;
+  text-shadow: 0 1px #120906;
+}
+.rotation-option.active {
+  border-color:#f3c56b;
+  background:linear-gradient(#f9d77e,#c58b2a);
+  color:#35220d;
+  text-shadow:0 1px #ffe6a9;
+  box-shadow:inset 0 1px #ffe5a2,0 2px #52300d;
+}
+.rotation-option:hover:not(:disabled) { border-color: #f3c46c; }
+.rotation-option:disabled { opacity: .45; }
+
+/* Escore em placas de pergaminho: MeepleIcon é reutilizado sem mudança. */
+.panel-title {
+  font-family: 'Cinzel',Georgia,serif;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  color:#f0c26b;
+  text-shadow:0 2px #1c0d07;
+  padding: 2px 5px 7px;
+  border-bottom: 1px solid #b7803d87;
+}
+.players-list { gap: 7px; }
+.player-card, .podium-row {
+  border:1px solid #9c733f;
+  border-left-width: 4px;
+  border-radius: 4px;
+  padding: 9px 9px;
+  background:linear-gradient(180deg,#f4e1b8c9,#d9b681ec),url('./assets/v9/parchment.webp');
+  background-size: auto,260px 260px;
+  box-shadow:inset 0 1px #fff4d4, inset 0 0 0 2px #f3d8a591,0 2px 4px #1b0b078c;
+}
+.player-card.player-active {
+  border-color: #c6953f;
+  background:linear-gradient(180deg,#fff0c9,#e2bc77);
+  box-shadow:inset 0 0 0 2px #ffefc0,0 0 0 1px #c99142,0 2px 10px #b47e397c;
+}
+.player-name { font-family: Georgia,serif; font-size:14px; font-weight: 800; color:#362319; }
+.player-subtext { color:#6a482a; font-size:11px; font-weight: 700; }
+.current-badge {
+  background: linear-gradient(#e9c263,#ad6d2d);
+  color:#35200f;
+  font-family: 'Cinzel',Georgia,serif;
+  font-size:9px;
+  border:1px solid #946022;
+  border-radius:3px;
+}
+.score-number { color:#583318; font-size:18px; text-shadow:0 1px #fff5d9; }
+.score-unit { color:#745336; font-size: 11px; }
+/* Nem .player-avatar-box, nem MeepleIcon, nem elementos SVG receberam overrides. */
+
+/* Ações de meeple e feedback mantêm semântica e lógica originais. */
+.meeple-box-header, .meeple-action-box { color:#eed7ac; }
+.meeple-title { font-family:'Cinzel',Georgia,serif; color:#f0c36d; }
+.meeple-subtitle, .no-meeple-note { color:#e4cba4; }
+.btn-meeple-segment { font-size:12px; }
+.turn-banner {
+  border-radius: 4px;
+  background:linear-gradient(#51301cd9,#27170fe9),url('./assets/v9/old-wood.webp');
+  border:2px ridge var(--player-color);
+  text-shadow:0 2px 2px #150b07;
+}
+
+/* Diálogos e formulários, coerentes com o HUD. */
+.modal-backdrop { background:#120906c9; backdrop-filter:blur(3px); }
+.modal-card {
+  background-image:linear-gradient(180deg,#382319eb,#28160eea),url('./assets/v9/old-wood.webp');
+  background-size:auto,540px 290px;
+  border:3px ridge #b98b4e;
+  border-radius:7px;
+  box-shadow:inset 0 0 0 3px #180d07, 0 15px 40px #100705da;
+}
+.modal-title, .rules-content h3 { color:#f3ce83; }
+.modal-subtitle, .rules-content, .winner-announcement, .form-label { color:#edd6b2; }
+.player-setup-row, .podium-row { color: #352314; }
+.player-setup-row {
+  border:1px solid #947041;
+  background:linear-gradient(#ecd2a2,#d1ac7a);
+  border-radius:4px;
+}
+.input-text, .input-select {
+  background:#f1dbb2;
+  border:1px solid #936e43;
+  color:#3d2818;
+}
+.btn-count { border-color:#966b37; }
+.btn-count.active { color:#37210b; }
+.podium-name, .podium-rank { color:#3d2617; }
+.podium-points strong { color:#6e3b18; }
+
+@media (max-width: 1100px) {
+  .sidebar-area { width:328px; padding:11px; }
+  .brand-title { font-size:20px; }
+  .brand-subtitle { display:none; }
+}
+@media (max-width: 900px) {
+  .app-navbar { height:54px; min-height:54px; }
+  .sidebar-area { width:100%; max-height:47vh; border-left:none; border-top:4px ridge #b28950; }
+  .board-area { background-size:100% 100%,100% 100%,105px 105px,105px 105px,165px auto,165px auto,410px 410px; }
+}
+@media (max-width: 480px) {
+  .app-navbar { padding:0 10px; }
+  .brand-title { font-size:16px; }
+  .brand-icon {font-size:18px}
+  .nav-actions {gap:5px}
+  .nav-actions .btn {padding:6px 8px; font-size:11px}
+  .board-header-bar {padding:6px 8px}
+  .board-header-bar .btn {padding:5px 7px;font-size:11px}
+}
