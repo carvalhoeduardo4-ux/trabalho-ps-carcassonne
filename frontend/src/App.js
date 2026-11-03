@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import * as api from './api/gameApi.js';
 import { TurnPhase, ROTATIONS, colorById, isAiPlayer } from './ui/constants.js';
 import { useAiTurn } from './ai/useAiTurn.js';
@@ -22,6 +22,8 @@ const INVALID_PLACEMENT_MESSAGES = {
 const SCORE_NOTICE_MS = 4500;
 
 const TURN_NOTICE_MS = 2500;
+
+const EMPTY_SCORED_KEYS = Object.freeze([]);
 
 const STRUCTURE_LABELS = { CITY: 'Cidade', ROAD: 'Estrada', MONASTERY: 'Mosteiro', FIELD: 'Campo' };
 
@@ -97,9 +99,10 @@ export function App() {
   const [startingNewGame, setStartingNewGame] = useState(false);
   const gameRef = useRef(null);
   const startingNewGameRef = useRef(false);
+  const inFlight = useRef(null);
 
   // Compra automaticamente a próxima peça quando o turno volta à fase DRAW_TILE
-  const settle = async (state) => {
+  const settle = useCallback(async (state) => {
     let s = state;
     if (s.status === 'ACTIVE' && s.phase === TurnPhase.DRAW_TILE) s = await api.drawTile();
     const prev = gameRef.current;
@@ -115,16 +118,14 @@ export function App() {
     setMeeplePreview(null);
     gameRef.current = s;
     setGame(s);
-  };
-
-  const inFlight = useRef(null);
+  }, []);
 
   /**
    * Executa uma ação no backend e aplica o estado devolvido.
    * Devolve true (sucesso), false (erro, já exibido ao usuário) ou null
    * (ignorada porque outra ação estava em andamento).
    */
-  const run = async (action) => {
+  const run = useCallback(async (action) => {
     if (inFlight.current) return null; // ignora cliques repetidos enquanto uma ação está em andamento
     const operation = (async () => {
       setBusy(true);
@@ -145,7 +146,7 @@ export function App() {
     } finally {
       if (inFlight.current === operation) inFlight.current = null;
     }
-  };
+  }, [settle]);
 
   // Avisos somem sozinhos
   useEffect(() => {
@@ -166,7 +167,7 @@ export function App() {
     return () => clearTimeout(timer);
   }, [turnNotice]);
 
-  const loadGame = () => {
+  const loadGame = useCallback(() => {
     setConnection('loading');
     api.getState()
       .then((s) => { setConnection('ok'); return settle(s); })
@@ -178,11 +179,11 @@ export function App() {
           setIsSettingUp(true);
         }
       });
-  };
+  }, [settle]);
 
   useEffect(() => {
     loadGame();
-  }, []);
+  }, [loadGame]);
 
   const players = useMemo(
     () => (game ? game.players.map(p => ({ ...p, color: colorById(p.color) })) : []),
@@ -258,25 +259,27 @@ export function App() {
   }, [game?.status, game?.phase, busy, isSettingUp, showRules, ai.aiTurn]);
 
   // Na vez da IA o humano não joga (defesa extra além dos controles desabilitados)
-  const handlePlaceTile = (x, y) => {
+  const handlePlaceTile = useCallback((x, y) => {
     if (ai.aiTurn) return;
     run(() => api.placeTile({ x, y, rotation }));
-  };
+  }, [ai.aiTurn, rotation, run]);
 
-  const handleInvalidPlacement = (reason) => {
+  const handleInvalidPlacement = useCallback((reason) => {
     if (ai.aiTurn || reason === 'occupied') return; // a célula treme; um aviso aqui só atrapalharia
     setError(INVALID_PLACEMENT_MESSAGES[reason] || 'Posição inválida para esta peça.');
-  };
+  }, [ai.aiTurn]);
 
-  const handlePlaceMeeple = (option) => {
+  const handlePlaceMeeple = useCallback((option) => {
     if (ai.aiTurn) return;
     run(() => api.placeMeeple(option));
-  };
+  }, [ai.aiTurn, run]);
 
-  const handleSkipMeeple = () => {
+  const handleSkipMeeple = useCallback(() => {
     if (ai.aiTurn) return;
     run(() => api.skipMeeple());
-  };
+  }, [ai.aiTurn, run]);
+
+  const handleToggleCoords = useCallback(() => setShowCoords(value => !value), []);
 
   /** Tela exibida quando não há partida carregada. */
   const renderSplash = () => {
@@ -397,7 +400,7 @@ export function App() {
           validPlacements: validPlacements,
           onPlaceTile: handlePlaceTile,
           onInvalidPlacement: handleInvalidPlacement,
-          scoredKeys: scoreInfo ? scoreInfo.keys : [],
+          scoredKeys: scoreInfo ? scoreInfo.keys : EMPTY_SCORED_KEYS,
           phase: game.phase,
           players: players,
           previewTile: previewTile,
@@ -405,7 +408,7 @@ export function App() {
           meeplePreview: meeplePreview,
           currentPlayerIndex: game.currentPlayerIndex,
           showCoords: showCoords,
-          onToggleCoords: () => setShowCoords(v => !v),
+          onToggleCoords: handleToggleCoords,
           turnNotice: turnNotice,
           readOnly: ai.aiTurn,
           aiTarget: ai.aiTarget
