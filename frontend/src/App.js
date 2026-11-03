@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import * as api from './api/gameApi.js';
-import { TurnPhase, ROTATIONS, colorById } from './ui/constants.js';
+import { TurnPhase, ROTATIONS, colorById, isAiPlayer } from './ui/constants.js';
+import { useAiTurn } from './ai/useAiTurn.js';
 import { toRenderTile } from './ui/tileAdapter.js';
 import { GameBoard } from './components/GameBoard.js';
 import { TurnPanel } from './components/TurnPanel.js';
@@ -93,7 +94,9 @@ export function App() {
   const [meeplePreview, setMeeplePreview] = useState(null);
   const [showCoords, setShowCoords] = useState(false);
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
+  const [startingNewGame, setStartingNewGame] = useState(false);
   const gameRef = useRef(null);
+  const startingNewGameRef = useRef(false);
 
   // Compra automaticamente a próxima peça quando o turno volta à fase DRAW_TILE
   const settle = async (state) => {
@@ -102,7 +105,8 @@ export function App() {
     const prev = gameRef.current;
     if (s.status === 'ACTIVE' && (!prev || prev.currentPlayerIndex !== s.currentPlayerIndex)) {
       const p = s.players[s.currentPlayerIndex];
-      setTurnNotice({ id: Date.now(), name: p.name, color: colorById(p.color).hex });
+      const name = isAiPlayer(p) ? `${p.name} (IA)` : p.name;
+      setTurnNotice({ id: Date.now(), name, color: colorById(p.color).hex });
     }
     // A peça recém-colocada continua destacada até a próxima jogada
     if (s.placedTile) setLastPlacedKey(`${s.placedTile.x},${s.placedTile.y}`);
@@ -113,20 +117,33 @@ export function App() {
     setGame(s);
   };
 
-  const inFlight = useRef(false);
+  const inFlight = useRef(null);
 
+  /**
+   * Executa uma ação no backend e aplica o estado devolvido.
+   * Devolve true (sucesso), false (erro, já exibido ao usuário) ou null
+   * (ignorada porque outra ação estava em andamento).
+   */
   const run = async (action) => {
-    if (inFlight.current) return; // ignora cliques repetidos enquanto uma ação está em andamento
-    inFlight.current = true;
-    setBusy(true);
-    setError(null);
+    if (inFlight.current) return null; // ignora cliques repetidos enquanto uma ação está em andamento
+    const operation = (async () => {
+      setBusy(true);
+      setError(null);
+      try {
+        await settle(await action());
+        return true;
+      } catch (e) {
+        if (!e.cancelled) setError(friendlyError(e.message)); // jogada da IA cancelada não é erro
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    })();
+    inFlight.current = operation;
     try {
-      await settle(await action());
-    } catch (e) {
-      setError(friendlyError(e.message));
+      return await operation;
     } finally {
-      inFlight.current = false;
-      setBusy(false);
+      if (inFlight.current === operation) inFlight.current = null;
     }
   };
 
@@ -173,6 +190,16 @@ export function App() {
   );
   const currentPlayer = players[game ? game.currentPlayerIndex : 0];
 
+  // Jogadores controlados pelo computador jogam sozinhos; pausam com modais abertos
+  const ai = useAiTurn({
+    game,
+    enabled: !isSettingUp && !showRules,
+    run,
+    resync: () => run(() => api.getState()),
+    setRotation,
+    setMeeplePreview
+  });
+
   // Posições válidas apenas para a rotação escolhida localmente
   const validPlacements = useMemo(
     () => (game ? game.placements.filter(p => p.rotation === rotation) : []),
@@ -185,12 +212,29 @@ export function App() {
     [game, rotation]
   );
 
-  const handleStartNewGame = (playerConfigs) => {
-    setIsSettingUp(false);
-    setLastPlacedKey(null);
-    setGameOverDismissed(false);
-    gameRef.current = null;
-    run(() => api.startGame(playerConfigs));
+  const handleStartNewGame = async (playerConfigs) => {
+    if (startingNewGameRef.current) return;
+    startingNewGameRef.current = true;
+    setStartingNewGame(true);
+    ai.reset();
+    try {
+      // Um POST da IA que já começou não pode ser abortado com segurança: aguarda-o
+      // antes de substituir a partida para impedir que a resposta antiga vença a nova.
+      while (inFlight.current) await inFlight.current;
+      const previousGame = gameRef.current;
+      gameRef.current = null;
+      const started = await run(() => api.startGame(playerConfigs));
+      if (started) {
+        setLastPlacedKey(null);
+        setGameOverDismissed(false);
+        setIsSettingUp(false);
+      } else {
+        gameRef.current = previousGame;
+      }
+    } finally {
+      startingNewGameRef.current = false;
+      setStartingNewGame(false);
+    }
   };
 
   const handleRotate = (step = 1) => {
@@ -204,25 +248,35 @@ export function App() {
           event.ctrlKey || event.altKey || event.metaKey) return;
       const target = event.target;
       if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName)) return;
-      if (isSettingUp || showRules || busy || !game || game.status !== 'ACTIVE' ||
+      if (isSettingUp || showRules || busy || ai.aiTurn || !game || game.status !== 'ACTIVE' ||
           game.phase !== TurnPhase.PLACE_TILE) return;
       event.preventDefault();
       setRotation(prev => ROTATIONS[(ROTATIONS.indexOf(prev) + 1) % ROTATIONS.length]);
     };
     window.addEventListener('keydown', onRotateKey);
     return () => window.removeEventListener('keydown', onRotateKey);
-  }, [game?.status, game?.phase, busy, isSettingUp, showRules]);
+  }, [game?.status, game?.phase, busy, isSettingUp, showRules, ai.aiTurn]);
 
-  const handlePlaceTile = (x, y) => run(() => api.placeTile({ x, y, rotation }));
+  // Na vez da IA o humano não joga (defesa extra além dos controles desabilitados)
+  const handlePlaceTile = (x, y) => {
+    if (ai.aiTurn) return;
+    run(() => api.placeTile({ x, y, rotation }));
+  };
 
   const handleInvalidPlacement = (reason) => {
-    if (reason === 'occupied') return; // a célula treme; um aviso aqui só atrapalharia
+    if (ai.aiTurn || reason === 'occupied') return; // a célula treme; um aviso aqui só atrapalharia
     setError(INVALID_PLACEMENT_MESSAGES[reason] || 'Posição inválida para esta peça.');
   };
 
-  const handlePlaceMeeple = (option) => run(() => api.placeMeeple(option));
+  const handlePlaceMeeple = (option) => {
+    if (ai.aiTurn) return;
+    run(() => api.placeMeeple(option));
+  };
 
-  const handleSkipMeeple = () => run(() => api.skipMeeple());
+  const handleSkipMeeple = () => {
+    if (ai.aiTurn) return;
+    run(() => api.skipMeeple());
+  };
 
   /** Tela exibida quando não há partida carregada. */
   const renderSplash = () => {
@@ -352,7 +406,9 @@ export function App() {
           currentPlayerIndex: game.currentPlayerIndex,
           showCoords: showCoords,
           onToggleCoords: () => setShowCoords(v => !v),
-          turnNotice: turnNotice
+          turnNotice: turnNotice,
+          readOnly: ai.aiTurn,
+          aiTarget: ai.aiTarget
         })
       ),
 
@@ -369,7 +425,10 @@ export function App() {
           onPreviewMeeple: setMeeplePreview,
           onShowResult: () => setGameOverDismissed(false),
           currentPlayer: currentPlayer,
-          busy: busy
+          busy: busy,
+          aiTurn: ai.aiTurn,
+          aiFailed: ai.failed,
+          onAiRetry: ai.retry
         }),
         React.createElement(ScoreBoard, {
           players: players,
@@ -384,8 +443,9 @@ export function App() {
     isSettingUp ? React.createElement(SetupModal, {
       key: 'setup-modal',
       onStartGame: handleStartNewGame,
-      onCancel: game ? () => setIsSettingUp(false) : null,
-      hasGameInProgress: !!game && !isFinished
+      onCancel: game && !startingNewGame ? () => setIsSettingUp(false) : null,
+      hasGameInProgress: !!game && !isFinished,
+      starting: startingNewGame
     }) : null,
 
     // Modal de Fim de Jogo

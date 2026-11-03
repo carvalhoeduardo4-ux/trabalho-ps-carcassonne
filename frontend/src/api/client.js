@@ -8,6 +8,11 @@ async function request(path, options = {}) {
       ...options
     });
   } catch (e) {
+    if (e.name === 'AbortError') {
+      const cancelled = new Error('Requisição cancelada.');
+      cancelled.cancelled = true;
+      throw cancelled;
+    }
     // Erro de rede (servidor fora do ar): marcado para a interface diferenciar de erros da API
     const err = new Error('Não foi possível conectar ao servidor do jogo.');
     err.offline = true;
@@ -20,7 +25,7 @@ async function request(path, options = {}) {
   return body;
 }
 
-export const post = (path, data) =>
-  request(path, { method: 'POST', body: data === undefined ? undefined : JSON.stringify(data) });
+export const post = (path, data, options = {}) =>
+  request(path, { ...options, method: 'POST', body: data === undefined ? undefined : JSON.stringify(data) });
 
-export const get = (path) => request(path);
+export const get = (path, options = {}) => request(path, options);

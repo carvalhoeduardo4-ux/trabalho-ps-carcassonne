@@ -1,6 +1,7 @@
 import React from 'react';
 import { MeepleIcon } from './TileSvg.js';
 import { Modal } from './Modal.js';
+import { isAiPlayer } from '../ui/constants.js';
 
 const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
@@ -37,7 +38,11 @@ export function GameOverModal({ players = [], onRestart, onClose }) {
           React.createElement('div', { className: 'podium-rank' }, `${MEDALS[rank] || ''} ${rank}º`),
           React.createElement('div', { className: 'podium-player' },
             React.createElement(MeepleIcon, { colorHex: p.color.hex, size: 28, label: String(p.number) }),
-            React.createElement('span', { className: 'podium-name' }, p.name)
+            React.createElement('span', { className: 'podium-name' }, p.name),
+            isAiPlayer(p) ? React.createElement('span', {
+              className: 'ai-badge',
+              title: 'Controlado pelo computador'
+            }, React.createElement('span', { 'aria-hidden': 'true' }, '🤖 '), 'IA') : null
           ),
           React.createElement('div', { className: 'podium-points' },
             React.createElement('strong', null, p.score),

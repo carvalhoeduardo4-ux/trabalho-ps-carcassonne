@@ -10,6 +10,7 @@ import com.carcassonne.domain.board.Position;
 import com.carcassonne.domain.game.Game;
 import com.carcassonne.domain.player.Player;
 import com.carcassonne.domain.player.PlayerColor;
+import com.carcassonne.domain.player.PlayerType;
 import com.carcassonne.domain.tile.Rotation;
 import com.carcassonne.domain.tile.Tile;
 import com.carcassonne.domain.tile.TileFeature;
@@ -45,7 +46,8 @@ public class GameController {
             }
             setups.add(new PlayerSetup(
                     p.name(),
-                    PlayerColor.valueOf(p.color().toUpperCase(Locale.ROOT))
+                    PlayerColor.valueOf(p.color().toUpperCase(Locale.ROOT)),
+                    parseType(p.type())
             ));
         }
         engine.startGame(setups);
@@ -76,7 +78,7 @@ public class GameController {
                 phase,
                 g.getCurrentPlayerIndex(),
                 players.stream().map(p -> new PlayerDto(p.getName(), p.getColor().name(), p.getScore(),
-                        g.availableMeeples(p))).toList(),
+                        g.availableMeeples(p), p.getType().name())).toList(),
                 g.getDeck().remaining(),
                 g.currentDrawnTile().map(this::tileDto).orElse(null),
                 g.currentPlacedTile().map(this::placedDto).orElse(null),
@@ -136,6 +138,13 @@ public class GameController {
     public GameStateDto skipMeeple() {
         engine.skipMeeple();
         return state();
+    }
+
+    private static PlayerType parseType(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return PlayerType.HUMAN;
+        }
+        return PlayerType.valueOf(raw.trim().toUpperCase(Locale.ROOT));
     }
 
     private String phaseOf(Game g) {

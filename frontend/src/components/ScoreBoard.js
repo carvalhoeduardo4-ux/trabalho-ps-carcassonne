@@ -1,5 +1,6 @@
 import React from 'react';
 import { MeepleIcon } from './TileSvg.js';
+import { isAiPlayer } from '../ui/constants.js';
 
 export function ScoreBoard({ players = [], currentPlayerIndex = 0, gains = {}, gainId = null }) {
   return React.createElement('div', { className: 'scoreboard-panel card' },
@@ -28,6 +29,10 @@ export function ScoreBoard({ players = [], currentPlayerIndex = 0, gains = {}, g
             React.createElement('div', null,
               React.createElement('div', { className: 'player-name-row' },
                 React.createElement('strong', { className: 'player-name' }, p.name),
+                isAiPlayer(p) ? React.createElement('span', {
+                  className: 'ai-badge',
+                  title: 'Controlado pelo computador'
+                }, React.createElement('span', { 'aria-hidden': 'true' }, '🤖 '), 'IA') : null,
                 isCurrent ? React.createElement('span', { className: 'current-badge' }, 'Vez') : null
               ),
               React.createElement('div', { className: 'player-subtext' },

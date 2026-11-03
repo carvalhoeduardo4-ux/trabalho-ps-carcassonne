@@ -14,7 +14,10 @@ export function TurnPanel({
   onPreviewMeeple,
   onShowResult,
   currentPlayer,
-  busy = false
+  busy = false,
+  aiTurn = false,     // vez de um jogador controlado pelo computador: painel só informa
+  aiFailed = false,
+  onAiRetry
 }) {
   const { phase, drawnTile, placedTile, deckRemaining, meepleOptions = [], placements = [] } = game;
   const previewTile = drawnTile ? toRenderTile(drawnTile.features, rotation) : null;
@@ -36,7 +39,7 @@ export function TurnPanel({
         className: 'player-indicator',
         style: { borderLeftColor: currentPlayer.color.hex }
       },
-        React.createElement('span', { className: 'turn-label' }, 'Vez de jogar'),
+        React.createElement('span', { className: 'turn-label' }, aiTurn ? '🤖 Vez do computador' : 'Vez de jogar'),
         React.createElement('h2', {
           className: 'player-name-current',
           style: { color: currentPlayer.color.hex }
@@ -47,6 +50,15 @@ export function TurnPanel({
         React.createElement('span', { className: 'deck-label' }, 'no monte')
       )
     ),
+
+    // IA parada após falhas seguidas
+    aiTurn && aiFailed ? React.createElement('div', { className: 'ai-status ai-status-error', role: 'alert' },
+      React.createElement('p', null, 'O computador não conseguiu jogar.'),
+      React.createElement('button', { type: 'button', className: 'btn btn-primary', onClick: onAiRetry }, 'Tentar novamente')
+    ) : aiTurn ? React.createElement('div', { className: 'ai-status', role: 'status' },
+      React.createElement('span', { className: 'ai-spinner', 'aria-hidden': 'true' }),
+      phase === TurnPhase.PLACE_MEEPLE ? 'Decidindo se coloca um meeple…' : 'Escolhendo onde colocar a peça…'
+    ) : null,
 
     // Fase 1: Posicionamento e Rotação da Peça
     phase === TurnPhase.PLACE_TILE && previewTile ? React.createElement('div', { className: 'tile-action-box' },
@@ -59,7 +71,7 @@ export function TurnPanel({
       ),
       React.createElement('div', { className: 'tile-info' },
         React.createElement('h3', { className: 'tile-name' }, 'Peça sorteada'),
-        React.createElement('p', { className: 'tile-help-text' },
+        aiTurn ? null : React.createElement('p', { className: 'tile-help-text' },
           validPlacements.length > 0
             ? 'Passe o mouse no tabuleiro para ver o encaixe e clique em uma posição destacada.'
             : placements.length > 0
@@ -67,7 +79,7 @@ export function TurnPanel({
               : 'Nenhuma posição válida para esta peça.'
         )
       ),
-      React.createElement('div', { className: 'rotate-buttons' },
+      aiTurn ? null : React.createElement('div', { className: 'rotate-buttons' },
         React.createElement('button', {
           type: 'button',
           className: 'btn btn-outline btn-rotate-ccw',
@@ -88,7 +100,7 @@ export function TurnPanel({
         )
       ),
       // Rotações com a quantidade de posições válidas de cada uma
-      React.createElement('div', { className: 'rotation-options-box' },
+      aiTurn ? null : React.createElement('div', { className: 'rotation-options-box' },
         React.createElement('span', { id: 'rotation-label', className: 'options-label' }, 'Posições válidas por rotação:'),
         React.createElement('div', { className: 'rotation-options', role: 'group', 'aria-labelledby': 'rotation-label' },
           ROTATIONS.map((r, i) => React.createElement('button', {
@@ -125,7 +137,7 @@ export function TurnPanel({
         )
       ),
 
-      meepleOptions.length > 0 ? (
+      aiTurn ? null : meepleOptions.length > 0 ? (
         React.createElement('div', { className: 'meeple-options-list' },
           React.createElement('span', { className: 'options-label' }, 'Passe o mouse para ver no tabuleiro e clique para escolher:'),
           meepleOptions.map(opt =>
@@ -153,7 +165,7 @@ export function TurnPanel({
         )
       ),
 
-      React.createElement('button', {
+      aiTurn ? null : React.createElement('button', {
         type: 'button',
         className: `btn ${meepleOptions.length === 0 ? 'btn-primary' : 'btn-secondary'} btn-skip-meeple`,
         disabled: busy,

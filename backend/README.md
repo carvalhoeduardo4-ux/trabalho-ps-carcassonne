@@ -25,12 +25,13 @@ Após um build, use `./backend/scripts/smoke-backend.sh` para repetir apenas o f
 ```
 com.carcassonne
 ├── application
-│   ├── port/in      GameInputPort, PlayerSetup   (porta de entrada hexagonal)
-│   └── service      GameEngine                   (controller; orquestra o turno)
+│   ├── port/in      GameInputPort, AiInputPort, PlayerSetup (portas de entrada hexagonais)
+│   └── service      GameEngine (controller; orquestra o turno), AiPlayerService (decisão da IA)
 └── domain
+    ├── ai           AiDecisionStrategy (Strategy), RandomDecisionStrategy, AiDecision, AiAction
     ├── board        Board, PlacedTile, Position, Placement, FeatureRef, FeatureRegion
     ├── game         Game (aggregate root), Turn + TurnState (State pattern), GameStatus
-    ├── player       Player, PlayerColor, MeeplePlacement
+    ├── player       Player, PlayerColor, PlayerType (HUMAN/AI), MeeplePlacement
     ├── rules        TilePlacementRules, MeeplePlacementRules, ScoringRules,
     │                FeatureConnectivity, *ScoringStrategy, ScoreAward
     ├── tile         Tile, TileFeature, EdgeContact, Direction, EdgeLane, Rotation,
@@ -38,7 +39,7 @@ com.carcassonne
     └── exception    GameActionException e subclasses
 ```
 
-- `GameEngine` é o único ponto de entrada. Ele consulta as regras (sem estado) e chama os comandos do `Game`.
+- `GameEngine` é o único ponto de entrada que altera a partida. Ele consulta as regras (sem estado) e chama os comandos do `Game`. `AiPlayerService` (porta `AiInputPort`) só consulta a partida pela `GameInputPort` e decide a jogada da IA.
 - `Game` protege as transições; `Turn` controla a fase com o padrão State.
 - As regras recebem `Board`, `Tile` etc. e não dependem de `Game`.
 
@@ -82,6 +83,8 @@ Sequência típica do cliente: `drawTile → getLegalPlacements → placeTile �
 | `InvalidMeeplePlacementException` | Meeple em região ocupada, fora da peça do turno ou sem meeples |
 | `IllegalStateException` | Nenhuma partida iniciada |
 | `IllegalArgumentException` | Dados inválidos (jogadores, cores) |
+| `NotAiPlayerTurnException` | Decisão da IA pedida na vez de um humano |
+| `AiDecisionException` | Defeito interno da IA (não é erro de regra; HTTP 500) |
 
 Todas as `GameActionException` são erros de regra: o frontend deve mapeá-las para HTTP 4xx (ex.: 409/422), mantendo o estado inalterado.
 
@@ -98,7 +101,7 @@ Todas as `GameActionException` são erros de regra: o frontend deve mapeá-las p
 | `PlacedTile` | `tile`, `placement` (construtor `PlacedTile(Tile, Placement)`; getters de posição e rotação delegados a `Placement`) |
 | `FeatureRef` | `position`, `featureId` — identifica uma feature numa peça posicionada |
 | `MeeplePlacement` | `player`, `feature` (`FeatureRef`) |
-| `Player` | `name`, `color`, `score` |
+| `Player` | `name`, `color`, `type` (HUMAN/AI), `score` |
 | `PlayerColor` | RED, BLUE, GREEN, YELLOW, BLACK |
 
 ### Notas para renderizar o tabuleiro
@@ -134,6 +137,22 @@ Pontuação ao completar: **estrada** = 1/peça · **cidade** = 2/peça + 2/escu
 | `GET` | `/api/game/meeples` | Lista opções de meeple elegíveis |
 | `POST` | `/api/game/meeple` | Aloca meeple na peça (`MeepleRequest`) |
 | `POST` | `/api/game/skip` | Pula meeple e resolve o turno |
+| `GET` | `/api/game/ai/decision` | Jogada sorteada para o jogador atual, se for IA (`AiDecisionDto`). Não altera o estado. 409 na vez de um humano (`NotAiPlayerTurnException`) ou com a partida encerrada; 500 (`AiDecisionException`) em defeito interno da IA |
+
+`PlayerRequest` aceita o campo opcional `type` (`HUMAN` padrão, ou `AI`); valor inválido retorna 400. `PlayerDto` expõe `type`.
+
+### Jogador controlado pelo computador (IA aleatória)
+
+Na vez de um jogador `AI`, o cliente chama `GET /api/game/ai/decision` e aplica a resposta pelo endpoint correspondente:
+
+| `action` | Campo | Aplicar com |
+|---|---|---|
+| `DRAW_TILE` | — | `POST /api/game/draw` |
+| `PLACE_TILE` | `placement` (`PlacementDto`: `x`, `y`, `rotation`) | `POST /api/game/tile` |
+| `PLACE_MEEPLE` | `feature` (`FeatureRefDto`: `x`, `y`, `featureId`) | `POST /api/game/meeple` |
+| `SKIP_MEEPLE` | — | `POST /api/game/skip` |
+
+A escolha é sempre feita entre as opções legais da fase; o endpoint apenas decide e os comandos continuam passando pela mesma API usada pelo jogador humano.
 
 ## Pendências e Próximos Passos
 
@@ -149,3 +168,6 @@ Pontuação ao completar: **estrada** = 1/peça · **cidade** = 2/peça + 2/escu
 `backend/src/test/java/.../application/service/`:
 - `GameInitializationTest` — criação da partida.
 - `GameTurnFlowTest` — rotação/bordas, ordem das fases, colocação inválida e partida completa até esgotar o monte.
+- `AiPlayerServiceTest` — decisões da IA por fase, rejeições (sem partida, vez de humano, estratégia ilegal) e partida completa entre duas IAs.
+
+Outros: `domain/ai/RandomDecisionStrategyTest` (sorteio, cenário de rotação, justiça entre posições) e `api/AiControllerTest` (endpoint da IA e campo `type`).

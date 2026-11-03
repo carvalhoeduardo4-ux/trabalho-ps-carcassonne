@@ -689,6 +689,6 @@ public class Game {
     }
 
     private static Player copyPlayer(Player player) {
-        return new Player(player.getName(), player.getColor(), player.getScore());
+        return new Player(player.getName(), player.getColor(), player.getScore(), player.getType());
     }
 }

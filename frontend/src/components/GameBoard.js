@@ -11,6 +11,10 @@ const DEFAULT_ZOOM = 2;
 /** Distância mínima (px) para um clique virar arraste. */
 const DRAG_THRESHOLD = 5;
 
+// Mantém as árvores SVG das peças já colocadas enquanto só hover/preview muda.
+// TileSvg continua sendo a fonte única da aparência das peças e dos meeples.
+const MemoizedTileSvg = React.memo(TileSvg);
+
 /** Limites do tabuleiro esparso (coordenadas podem ser negativas), com margem. */
 function getBounds(board, margin = 1) {
   if (board.length === 0) return { minX: -margin, maxX: margin, minY: -margin, maxY: margin };
@@ -39,7 +43,9 @@ export function GameBoard({
   currentPlayerIndex = 0,
   showCoords = false,
   onToggleCoords,
-  turnNotice = null
+  turnNotice = null,
+  readOnly = false,  // vez da IA: nenhuma casa aceita clique
+  aiTarget = null    // { x, y } onde a IA vai colocar a peça
 }) {
   const boardRef = useRef(null);
   const [flashKey, setFlashKey] = useState(null); // célula que acabou de receber um clique inválido
@@ -47,34 +53,64 @@ export function GameBoard({
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [dragging, setDragging] = useState(false);
   const drag = useRef(null);
-  const bounds = getBounds(board, 1);
+  const dragFrame = useRef(null);
+  const dragPoint = useRef(null);
+  const bounds = useMemo(() => getBounds(board, 1), [board]);
+  const sourceTilesByKey = useMemo(
+    () => new Map(board.map(tile => [keyOf(tile.x, tile.y), tile])),
+    [board]
+  );
   const tileSize = ZOOM_STEPS[zoom];
 
-  // Peças indexadas por posição, já no formato de desenho (com meeples)
-  const tilesByKey = useMemo(() => {
+  // Dados-base independentes do hover de meeple. Cada meeple é indexado uma
+  // vez, evitando filtrar a lista inteira para cada peça do tabuleiro.
+  const baseTilesByKey = useMemo(() => {
+    const meeplesByKey = new Map();
+    meeples.forEach(m => {
+      const key = keyOf(m.x, m.y);
+      const atTile = meeplesByKey.get(key) || [];
+      atTile.push(m);
+      meeplesByKey.set(key, atTile);
+    });
+
     const map = new Map();
     board.forEach(t => {
       const render = toRenderTile(t.features, t.rotation);
-      const tileMeeples = meeples
-        .filter(m => m.x === t.x && m.y === t.y)
+      const tileMeeples = (meeplesByKey.get(keyOf(t.x, t.y)) || [])
         .map(m => ({
           segment: meepleSegment(t.features, m.featureId, t.rotation),
           playerIndex: m.playerIndex
         }));
-      // Meeple semitransparente na região que o jogador está avaliando
-      if (meeplePreview && meeplePreview.x === t.x && meeplePreview.y === t.y) {
-        tileMeeples.push({
-          segment: meepleSegment(t.features, meeplePreview.featureId, t.rotation),
-          playerIndex: currentPlayerIndex,
-          ghost: true
-        });
-      }
       map.set(keyOf(t.x, t.y), { ...render, x: t.x, y: t.y, meeples: tileMeeples });
     });
     return map;
-  }, [board, meeples, meeplePreview, currentPlayerIndex]);
+  }, [board, meeples]);
 
-  const validMap = new Set(validPlacements.map(p => keyOf(p.x, p.y)));
+  // Somente a peça afetada ganha um novo objeto durante a prévia; todas as
+  // demais preservam identidade e são ignoradas por MemoizedTileSvg.
+  const previewPlacedTile = useMemo(() => {
+    if (!meeplePreview) return null;
+    const previewKey = keyOf(meeplePreview.x, meeplePreview.y);
+    const tile = baseTilesByKey.get(previewKey);
+    if (!tile) return null;
+    const source = sourceTilesByKey.get(previewKey);
+    if (!source) return null;
+    return {
+      ...tile,
+      meeples: [...tile.meeples, {
+        segment: meepleSegment(source.features, meeplePreview.featureId, source.rotation),
+        playerIndex: currentPlayerIndex,
+        ghost: true
+      }]
+    };
+  }, [baseTilesByKey, sourceTilesByKey, meeplePreview, currentPlayerIndex]);
+
+  const validMap = useMemo(
+    () => new Set(validPlacements.map(p => keyOf(p.x, p.y))),
+    [validPlacements]
+  );
+  const scoredSet = useMemo(() => new Set(scoredKeys), [scoredKeys]);
+  const meeplePreviewKey = meeplePreview ? keyOf(meeplePreview.x, meeplePreview.y) : null;
 
   useEffect(() => {
     if (!flashKey) return undefined;
@@ -84,9 +120,9 @@ export function GameBoard({
 
   /** Explica por que a célula clicada não aceita a peça atual. */
   const invalidReason = (x, y) => {
-    if (tilesByKey.has(keyOf(x, y))) return 'occupied';
+    if (baseTilesByKey.has(keyOf(x, y))) return 'occupied';
     const touches = [[1, 0], [-1, 0], [0, 1], [0, -1]]
-      .some(([dx, dy]) => tilesByKey.has(keyOf(x + dx, y + dy)));
+      .some(([dx, dy]) => baseTilesByKey.has(keyOf(x + dx, y + dy)));
     return touches ? 'incompatible' : 'isolated';
   };
 
@@ -111,6 +147,13 @@ export function GameBoard({
   useEffect(() => {
     centerBoard(false);
   }, []);
+
+  // Garante que a jogada escolhida pela IA fique visível
+  useEffect(() => {
+    if (!aiTarget || !boardRef.current) return;
+    const target = boardRef.current.querySelector(`[data-key="${keyOf(aiTarget.x, aiTarget.y)}"]`);
+    if (target) target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }, [aiTarget]);
 
   const changeZoom = (delta) => {
     const el = boardRef.current;
@@ -141,8 +184,18 @@ export function GameBoard({
       d.moved = true;
       setDragging(true);
     }
-    boardRef.current.scrollLeft = d.left - dx;
-    boardRef.current.scrollTop = d.top - dy;
+    dragPoint.current = { left: d.left - dx, top: d.top - dy };
+    if (dragFrame.current === null) {
+      dragFrame.current = requestAnimationFrame(() => {
+        dragFrame.current = null;
+        const point = dragPoint.current;
+        const el = boardRef.current;
+        if (point && el) {
+          el.scrollLeft = point.left;
+          el.scrollTop = point.top;
+        }
+      });
+    }
   };
 
   const onPointerUp = () => {
@@ -160,6 +213,10 @@ export function GameBoard({
     }
   };
 
+  useEffect(() => () => {
+    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+  }, []);
+
   const rows = [];
 
   // NORTH = y+1: desenha de cima para baixo (maxY -> minY)
@@ -167,14 +224,19 @@ export function GameBoard({
     const cells = [];
     for (let x = bounds.minX; x <= bounds.maxX; x++) {
       const key = keyOf(x, y);
-      const placedTile = tilesByKey.get(key);
-      const isValidSlot = phase === 'PLACE_TILE' && validMap.has(key);
-      const rejectsClick = phase === 'PLACE_TILE' && !isValidSlot;
+      const baseTile = baseTilesByKey.get(key);
+      const placedTile = key === meeplePreviewKey
+        ? previewPlacedTile
+        : baseTile;
+      const isValidSlot = !readOnly && phase === 'PLACE_TILE' && validMap.has(key);
+      const rejectsClick = !readOnly && phase === 'PLACE_TILE' && !isValidSlot;
+      const isAiTarget = !!aiTarget && aiTarget.x === x && aiTarget.y === y && !placedTile;
       const classes = ['grid-cell'];
       if (rejectsClick) classes.push('grid-cell-blocked');
       if (flashKey === key) classes.push('invalid-flash');
-      if (scoredKeys.includes(key)) classes.push('score-flash');
+      if (scoredSet.has(key)) classes.push('score-flash');
       if (key === lastPlacedKey && placedTile) classes.push('last-placed');
+      if (isAiTarget) classes.push('ai-target');
 
       cells.push(
         React.createElement('div', {
@@ -186,12 +248,16 @@ export function GameBoard({
           onMouseEnter: isValidSlot ? () => setHoverKey(key) : undefined,
           onMouseLeave: isValidSlot ? () => setHoverKey(null) : undefined
         },
-          placedTile ? React.createElement(TileSvg, {
+          placedTile ? React.createElement(MemoizedTileSvg, {
             tile: placedTile,
             size: tileSize - 4,
             players: players,
             showLabel: showCoords
-          }) : isValidSlot ? React.createElement(TileSvg, {
+          }) : isAiTarget ? React.createElement(MemoizedTileSvg, {
+            highlightValid: true,
+            ghostTile: previewTile,
+            size: tileSize - 4
+          }) : isValidSlot ? React.createElement(MemoizedTileSvg, {
             highlightValid: true,
             ghostTile: hoverKey === key && !dragging ? previewTile : null,
             size: tileSize - 4,
@@ -216,7 +282,10 @@ export function GameBoard({
     React.createElement('div', { className: 'board-header-bar' },
       React.createElement('div', { className: 'board-stats' },
         React.createElement('span', { className: 'badge' }, `Peças no tabuleiro: ${board.length}`),
-        phase === 'PLACE_TILE' ? React.createElement('span', { className: 'badge badge-action' },
+        readOnly ? React.createElement('span', { className: 'badge badge-ai' },
+          React.createElement('span', { 'aria-hidden': 'true' }, '🤖 '),
+          'Computador jogando…'
+        ) : phase === 'PLACE_TILE' ? React.createElement('span', { className: 'badge badge-action' },
           `${validPlacements.length} ${validPlacements.length === 1 ? 'posição válida' : 'posições válidas'} nesta rotação`
         ) : null
       ),
