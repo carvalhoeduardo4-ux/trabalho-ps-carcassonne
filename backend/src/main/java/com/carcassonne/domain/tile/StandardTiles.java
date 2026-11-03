@@ -44,9 +44,9 @@ public final class StandardTiles {
 
         addCopies(tiles, 5, StandardTiles::tileE);
 
-        // F: duas cópias, uma com escudo e outra sem escudo.
+        // F: duas cópias, ambas com escudo no inventário do jogo-base.
         tiles.add(tileF(1));
-        tiles.add(tileF(0));
+        tiles.add(tileF(1));
 
         addCopies(tiles, 1, StandardTiles::tileG);
         addCopies(tiles, 3, StandardTiles::tileH);
@@ -296,15 +296,12 @@ public final class StandardTiles {
         );
     }
 
-    /** L: cidade ao norte e bifurcação em T de estrada para E/S/W. */
+    /** L: cidade ao norte e três estradas encerradas na aldeia central. */
     private static Tile tileL() {
         TileFeature city = city(1, 0, Direction.NORTH);
-        TileFeature road = road(
-                2,
-                Direction.EAST,
-                Direction.SOUTH,
-                Direction.WEST
-        );
+        TileFeature eastRoad = road(2, Direction.EAST);
+        TileFeature southRoad = road(6, Direction.SOUTH);
+        TileFeature westRoad = road(7, Direction.WEST);
 
         TileFeature northField = field(3, List.of(
                 lane(Direction.EAST, EdgeLane.LEFT),
@@ -325,10 +322,12 @@ public final class StandardTiles {
                 "L",
                 List.of(
                         city,
-                        road,
+                        eastRoad,
                         northField,
                         southEastField,
-                        southWestField
+                        southWestField,
+                        southRoad,
+                        westRoad
                 ),
                 adjacency(northField, city)
         );
@@ -596,14 +595,11 @@ public final class StandardTiles {
         );
     }
 
-    /** W: bifurcação em T para S/W/E, separando três campos. */
+    /** W: três estradas encerradas na aldeia central, separando três campos. */
     private static Tile tileW() {
-        TileFeature road = road(
-                1,
-                Direction.SOUTH,
-                Direction.WEST,
-                Direction.EAST
-        );
+        TileFeature southRoad = road(1, Direction.SOUTH);
+        TileFeature westRoad = road(5, Direction.WEST);
+        TileFeature eastRoad = road(6, Direction.EAST);
 
         TileFeature southEastField = field(2, List.of(
                 lane(Direction.SOUTH, EdgeLane.LEFT),
@@ -625,23 +621,22 @@ public final class StandardTiles {
         return tile(
                 "W",
                 List.of(
-                        road,
+                        southRoad,
                         southEastField,
                         southWestField,
-                        northField
+                        northField,
+                        westRoad,
+                        eastRoad
                 )
         );
     }
 
-    /** X: cruzamento de quatro estradas, separando quatro campos. */
+    /** X: quatro estradas encerradas no cruzamento, separando quatro campos. */
     private static Tile tileX() {
-        TileFeature road = road(
-                1,
-                Direction.NORTH,
-                Direction.EAST,
-                Direction.SOUTH,
-                Direction.WEST
-        );
+        TileFeature northRoad = road(1, Direction.NORTH);
+        TileFeature eastRoad = road(6, Direction.EAST);
+        TileFeature southRoad = road(7, Direction.SOUTH);
+        TileFeature westRoad = road(8, Direction.WEST);
 
         TileFeature northEastField = field(2, List.of(
                 lane(Direction.NORTH, EdgeLane.RIGHT),
@@ -666,11 +661,14 @@ public final class StandardTiles {
         return tile(
                 "X",
                 List.of(
-                        road,
+                        northRoad,
                         northEastField,
                         southEastField,
                         southWestField,
-                        northWestField
+                        northWestField,
+                        eastRoad,
+                        southRoad,
+                        westRoad
                 )
         );
     }

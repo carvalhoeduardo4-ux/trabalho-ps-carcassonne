@@ -31,11 +31,11 @@ class FeatureConnectivityTest {
             new FeatureConnectivity();
 
     @Test
-    void connectedRegionShouldTraverseRoadJunctionL() {
+    void connectedRegionShouldStopAtRoadJunctionL() {
         Board board =
                 junctionBoard();
 
-        FeatureRef centerRoad =
+        FeatureRef eastRoad =
                 new FeatureRef(
                         new Position(0, 0),
                         2
@@ -44,7 +44,7 @@ class FeatureConnectivityTest {
         FeatureRegion region =
                 connectivity.connectedRegion(
                         board,
-                        centerRoad
+                        eastRoad
                 );
 
         assertEquals(
@@ -53,7 +53,7 @@ class FeatureConnectivityTest {
         );
 
         assertEquals(
-                4,
+                2,
                 region.getMembers().size()
         );
 
@@ -75,23 +75,16 @@ class FeatureConnectivityTest {
                 )
         );
 
-        assertTrue(
+        assertFalse(
                 region.contains(
                         new FeatureRef(
-                                new Position(0, -1),
-                                1
+                                new Position(0, 0),
+                                6
                         )
                 )
         );
 
-        assertTrue(
-                region.contains(
-                        new FeatureRef(
-                                new Position(-1, 0),
-                                1
-                        )
-                )
-        );
+        assertFalse(region.contains(new FeatureRef(new Position(-1, 0), 1)));
     }
 
     @Test
@@ -758,7 +751,7 @@ class FeatureConnectivityTest {
     }
 
     @Test
-    void roadThroughJunctionShouldBeCompleteWhenAllArmsAreClosed() {
+    void roadArmShouldBeCompleteWhenItsExternalEndIsClosed() {
         Board board =
                 junctionBoard();
 
@@ -780,7 +773,7 @@ class FeatureConnectivityTest {
     }
 
     @Test
-    void roadThroughJunctionShouldBeIncompleteWhenOneArmIsOpen() {
+    void roadArmCompletionShouldNotDependOnAnotherOpenArm() {
         Board board =
                 new Board();
 
@@ -810,7 +803,7 @@ class FeatureConnectivityTest {
                 )
         );
 
-        FeatureRegion region =
+        FeatureRegion eastRegion =
                 connectivity.connectedRegion(
                         board,
                         new FeatureRef(
@@ -819,12 +812,19 @@ class FeatureConnectivityTest {
                         )
                 );
 
-        assertFalse(
+        assertTrue(
                 connectivity.isComplete(
                         board,
-                        region
+                        eastRegion
                 )
         );
+
+        FeatureRegion southRegion = connectivity.connectedRegion(
+                board,
+                new FeatureRef(new Position(0, 0), 6)
+        );
+
+        assertFalse(connectivity.isComplete(board, southRegion));
     }
 
     private boolean containsRegionWith(

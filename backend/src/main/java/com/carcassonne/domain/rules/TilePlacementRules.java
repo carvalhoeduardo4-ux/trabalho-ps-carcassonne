@@ -49,12 +49,12 @@ public class TilePlacementRules {
         Position position =
                 placement.getPosition();
 
-        Rotation rotation =
-                placement.getRotation();
-
         if (board.isOccupied(position)) {
             return false;
         }
+
+        PlacedTile candidate =
+                new PlacedTile(tile, placement);
 
         Map<Direction, PlacedTile> neighbors =
                 board.neighbors(position);
@@ -81,8 +81,7 @@ public class TilePlacementRules {
                     entry.getValue();
 
             if (!edgesMatch(
-                    tile,
-                    rotation,
+                    candidate,
                     side,
                     neighbor
             )) {
@@ -142,16 +141,14 @@ public class TilePlacementRules {
      * FeatureConnectivity.
      */
     private boolean edgesMatch(
-            Tile tile,
-            Rotation rotation,
+            PlacedTile candidate,
             Direction side,
             PlacedTile neighbor
     ) {
         Optional<TileFeature> mine =
-                tile.featureAt(
+                candidate.featureAt(
                         side,
-                        EdgeLane.CENTER,
-                        rotation
+                        EdgeLane.CENTER
                 );
 
         Optional<TileFeature> theirs =

@@ -52,7 +52,7 @@ class ScoringRulesTest {
     // =====================================================
 
     @Test
-    void shouldAwardCompletedJunctionRoadToMajorityPlayer() {
+    void shouldScoreCompletedJunctionArmsAsIndependentRoads() {
         Board board =
                 junctionBoard();
 
@@ -105,29 +105,22 @@ class ScoringRulesTest {
                         junction
                 );
 
+        assertEquals(3, awards.size());
+        assertTrue(awards.stream().allMatch(award -> award.getPoints() == 2));
+        assertEquals(
+                2,
+                awards.stream().filter(award -> award.getRecipients().equals(List.of(alice))).count()
+        );
         assertEquals(
                 1,
-                awards.size()
-        );
-
-        ScoreAward award =
-                awards.get(0);
-
-        assertEquals(
-                4,
-                award.getPoints()
-        );
-
-        assertEquals(
-                List.of(alice),
-                award.getRecipients()
+                awards.stream().filter(award -> award.getRecipients().equals(List.of(bob))).count()
         );
     }
 
     @Test
     void tiedPlayersShouldBothReceiveFullScore() {
         Board board =
-                junctionBoard();
+                straightRoadBoard();
 
         Player alice =
                 new Player(
@@ -159,7 +152,7 @@ class ScoringRulesTest {
                         )
                 );
 
-        PlacedTile junction =
+        PlacedTile middle =
                 board.tileAt(
                         new Position(0, 0)
                 ).orElseThrow();
@@ -168,7 +161,7 @@ class ScoringRulesTest {
                 scoringRules.completedAwards(
                         board,
                         meeples,
-                        junction
+                        middle
                 );
 
         assertEquals(
@@ -180,7 +173,7 @@ class ScoringRulesTest {
                 awards.get(0);
 
         assertEquals(
-                4,
+                3,
                 award.getPoints()
         );
 
@@ -569,6 +562,30 @@ class ScoringRulesTest {
     // =====================================================
     // HELPERS
     // =====================================================
+
+    private Board straightRoadBoard() {
+        Board board = new Board();
+        Tile middle = new Tile(
+                "MIDDLE",
+                List.of(new TileFeature(
+                        1,
+                        FeatureType.ROAD,
+                        0,
+                        List.of(
+                                new EdgeContact(Direction.EAST, EdgeLane.CENTER),
+                                new EdgeContact(Direction.WEST, EdgeLane.CENTER)
+                        )
+                ))
+        );
+
+        board.place(new PlacedTile(
+                middle,
+                new Placement(new Position(0, 0), Rotation.DEG_0)
+        ));
+        board.place(roadEnd("E", new Position(1, 0), Direction.WEST));
+        board.place(roadEnd("W", new Position(-1, 0), Direction.EAST));
+        return board;
+    }
 
     private Board junctionBoard() {
         Board board =

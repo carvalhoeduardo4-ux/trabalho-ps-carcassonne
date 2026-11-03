@@ -32,7 +32,7 @@ class MeeplePlacementRulesTest {
             new MeeplePlacementRules(connectivity);
 
     @Test
-    void shouldRejectMeepleWhenConnectedRoadAlreadyContainsMeeple() {
+    void shouldRejectMeepleWhenSameJunctionArmAlreadyContainsMeeple() {
         Board board = junctionBoard();
 
         Player player =
@@ -48,30 +48,40 @@ class MeeplePlacementRulesTest {
                 )
         );
 
-        FeatureRef junctionRoad =
+        FeatureRef eastRoad =
                 new FeatureRef(new Position(0, 0), 2);
 
         assertFalse(
                 rules.canPlace(
                         board,
                         meeples,
-                        junctionRoad
+                        eastRoad
                 )
         );
     }
 
     @Test
-    void shouldAllowMeepleWhenConnectedRoadIsEmpty() {
+    void shouldAllowMeepleOnDifferentJunctionArm() {
         Board board = junctionBoard();
 
-        FeatureRef junctionRoad =
-                new FeatureRef(new Position(0, 0), 2);
+        Player player =
+                new Player("Alice", PlayerColor.RED);
+
+        List<MeeplePlacement> meeples = List.of(
+                new MeeplePlacement(
+                        player,
+                        new FeatureRef(new Position(1, 0), 1)
+                )
+        );
+
+        FeatureRef southRoad =
+                new FeatureRef(new Position(0, 0), 6);
 
         assertTrue(
                 rules.canPlace(
                         board,
-                        List.of(),
-                        junctionRoad
+                        meeples,
+                        southRoad
                 )
         );
     }

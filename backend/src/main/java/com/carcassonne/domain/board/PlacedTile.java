@@ -37,7 +37,12 @@ public class PlacedTile {
     }
 
     public Optional<TileFeature> edgeFeature(Direction side) {
-        return tile.edgeFeature(side, getRotation());
+        Optional<TileFeature> center = featureAt(side, EdgeLane.CENTER);
+        if (center.isPresent()) {
+            return center;
+        }
+        Optional<TileFeature> left = featureAt(side, EdgeLane.LEFT);
+        return left.isPresent() ? left : featureAt(side, EdgeLane.RIGHT);
     }
 
     public TileFeature feature(int featureId) {
@@ -45,7 +50,8 @@ public class PlacedTile {
     }
 
     public Optional<TileFeature> featureAt(Direction side, EdgeLane lane) {
-        return tile.featureAt(side, lane, getRotation());
+        Direction localSide = side.rotateBack(placement.getRotation());
+        return tile.featureAt(localSide, lane);
     }
 
     @Override

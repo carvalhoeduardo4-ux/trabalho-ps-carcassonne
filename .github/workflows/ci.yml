@@ -1,4 +1,4 @@
-name: Backend CI
+name: CI
 
 on:
   pull_request:
@@ -13,6 +13,62 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Frontend module graph
+        run: |
+          node --input-type=module <<'NODE'
+          import { readdir, readFile, stat } from 'node:fs/promises';
+          import { spawnSync } from 'node:child_process';
+          import path from 'node:path';
+          import process from 'node:process';
+
+          const frontendRoot = path.resolve('frontend');
+          const sourceRoot = path.join(frontendRoot, 'src');
+
+          async function javascriptFiles(directory) {
+            const entries = await readdir(directory, { withFileTypes: true });
+            const nested = await Promise.all(entries.map(entry => {
+              const target = path.join(directory, entry.name);
+              if (entry.isDirectory()) return javascriptFiles(target);
+              return entry.isFile() && entry.name.endsWith('.js') ? [target] : [];
+            }));
+            return nested.flat();
+          }
+
+          const files = await javascriptFiles(sourceRoot);
+          const failures = [];
+          const importPattern = /(?:import|export)\s+(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g;
+
+          for (const file of files) {
+            const syntax = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+            if (syntax.status !== 0) {
+              failures.push(`${path.relative(frontendRoot, file)}: invalid syntax\n${syntax.stderr.trim()}`);
+            }
+
+            const source = await readFile(file, 'utf8');
+            for (const match of source.matchAll(importPattern)) {
+              const specifier = match[1];
+              if (!specifier.startsWith('.')) continue;
+
+              const target = path.resolve(path.dirname(file), specifier);
+              try {
+                if (!(await stat(target)).isFile()) throw new Error('not a file');
+              } catch {
+                failures.push(`${path.relative(frontendRoot, file)}: missing relative import ${specifier}`);
+              }
+            }
+          }
+
+          if (failures.length > 0) {
+            console.error(failures.join('\n'));
+            process.exit(1);
+          }
+
+          console.log(`Frontend checked: ${files.length} modules with valid syntax and relative imports.`);
+          NODE
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:

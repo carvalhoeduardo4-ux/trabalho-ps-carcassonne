@@ -10,7 +10,7 @@ const LANE_PRIORITY = ['CENTER', 'LEFT', 'RIGHT'];
 
 /**
  * Converte as features do backend (sem rotação) no formato que o TileSvg desenha:
- * { edges, cities, hasMonastery } já considerando a rotação.
+ * { edges, cities, roads, hasMonastery } já considerando a rotação.
  */
 export function toRenderTile(features = [], rotation = 'DEG_0') {
   const edges = {};
@@ -34,9 +34,19 @@ export function toRenderTile(features = [], rotation = 'DEG_0') {
       shields: f.shieldCount || 0
     }));
 
+  // A identidade de cada ROAD é relevante: braços de uma aldeia/cruzamento
+  // são segmentos distintos, ainda que terminem no mesmo centro visual.
+  const roads = features
+    .filter(f => f.type === 'ROAD')
+    .map(f => ({
+      id: f.id,
+      sides: [...new Set(f.edgeContacts.map(c => rotateSide(c.side, rotation)))]
+    }));
+
   return {
     edges,
     cities,
+    roads,
     hasMonastery: features.some(f => f.type === 'MONASTERY')
   };
 }
@@ -48,7 +58,9 @@ export function meepleSegment(features = [], featureId, rotation = 'DEG_0') {
   const contacts = [...feature.edgeContacts].sort(
     (a, b) => LANE_PRIORITY.indexOf(a.lane) - LANE_PRIORITY.indexOf(b.lane)
   );
-  return rotateSide(contacts[0].side, rotation);
+  const contact = contacts[0];
+  const side = rotateSide(contact.side, rotation);
+  return contact.lane === 'CENTER' ? side : `${side}_${contact.lane}`;
 }
 
 export const FEATURE_LABELS = { CITY: 'Cidade', ROAD: 'Estrada', MONASTERY: 'Mosteiro', FIELD: 'Campo' };
@@ -59,6 +71,12 @@ export function featureLabel(features = [], featureId, rotation = 'DEG_0') {
   if (!feature) return `Região ${featureId}`;
   const type = FEATURE_LABELS[feature.type] || feature.type;
   const seg = meepleSegment(features, featureId, rotation);
-  const dir = { NORTH: 'Norte', EAST: 'Leste', SOUTH: 'Sul', WEST: 'Oeste', CENTER: 'Centro' }[seg];
+  const dir = {
+    NORTH: 'Norte', EAST: 'Leste', SOUTH: 'Sul', WEST: 'Oeste', CENTER: 'Centro',
+    NORTH_LEFT: 'Noroeste', NORTH_RIGHT: 'Nordeste',
+    EAST_LEFT: 'Nordeste', EAST_RIGHT: 'Sudeste',
+    SOUTH_LEFT: 'Sudeste', SOUTH_RIGHT: 'Sudoeste',
+    WEST_LEFT: 'Sudoeste', WEST_RIGHT: 'Noroeste'
+  }[seg];
   return `${type} (${dir})`;
 }

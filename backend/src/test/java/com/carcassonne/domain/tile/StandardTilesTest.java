@@ -14,56 +14,48 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StandardTilesTest {
 
     @Test
-    void tileLShouldModelRoadJunctionAsSingleFeature() {
+    void tileLShouldModelThreeIndependentRoadArms() {
         List<Tile> tiles = tilesById("L");
         assertEquals(3, tiles.size());
 
         for (Tile tile : tiles) {
             List<TileFeature> roads = roadFeatures(tile);
-            assertEquals(1, roads.size());
-
-            TileFeature road = roads.get(0);
-            assertEquals(2, road.getId());
-            assertRoadContacts(road, Direction.EAST, Direction.SOUTH, Direction.WEST);
+            assertEquals(3, roads.size());
+            assertRoadContacts(tile.feature(2), Direction.EAST);
+            assertRoadContacts(tile.feature(6), Direction.SOUTH);
+            assertRoadContacts(tile.feature(7), Direction.WEST);
             assertEquals(3, fieldFeatures(tile).size());
         }
     }
 
     @Test
-    void tileWShouldModelRoadJunctionAsSingleFeature() {
+    void tileWShouldModelThreeIndependentRoadArms() {
         List<Tile> tiles = tilesById("W");
         assertEquals(4, tiles.size());
 
         for (Tile tile : tiles) {
             List<TileFeature> roads = roadFeatures(tile);
-            assertEquals(1, roads.size());
-
-            TileFeature road = roads.get(0);
-            assertEquals(1, road.getId());
-            assertRoadContacts(road, Direction.SOUTH, Direction.WEST, Direction.EAST);
+            assertEquals(3, roads.size());
+            assertRoadContacts(tile.feature(1), Direction.SOUTH);
+            assertRoadContacts(tile.feature(5), Direction.WEST);
+            assertRoadContacts(tile.feature(6), Direction.EAST);
             assertEquals(3, fieldFeatures(tile).size());
             assertEquals(FeatureType.FIELD, tile.feature(4).getType());
         }
     }
 
     @Test
-    void tileXShouldModelCrossroadAsSingleFeatureAndFourFields() {
+    void tileXShouldModelFourIndependentRoadArmsAndFourFields() {
         List<Tile> tiles = tilesById("X");
         assertEquals(1, tiles.size());
 
         Tile tile = tiles.get(0);
         List<TileFeature> roads = roadFeatures(tile);
-        assertEquals(1, roads.size());
-
-        TileFeature road = roads.get(0);
-        assertEquals(1, road.getId());
-        assertRoadContacts(
-                road,
-                Direction.NORTH,
-                Direction.EAST,
-                Direction.SOUTH,
-                Direction.WEST
-        );
+        assertEquals(4, roads.size());
+        assertRoadContacts(tile.feature(1), Direction.NORTH);
+        assertRoadContacts(tile.feature(6), Direction.EAST);
+        assertRoadContacts(tile.feature(7), Direction.SOUTH);
+        assertRoadContacts(tile.feature(8), Direction.WEST);
         assertEquals(4, fieldFeatures(tile).size());
     }
 
@@ -113,6 +105,21 @@ class StandardTilesTest {
             assertAdjacency(tile, northField, city);
             assertAdjacency(tile, southField, city);
         }
+    }
+
+    @Test
+    void bothTileFCopiesShouldCarryTheCatalogShield() {
+        List<Tile> tiles = tilesById("F");
+
+        assertEquals(2, tiles.size());
+        assertTrue(tiles.stream().allMatch(tile -> tile.feature(1).getShieldCount() == 1));
+        assertEquals(
+                10,
+                StandardTiles.createStandardDrawTiles().stream()
+                        .flatMap(tile -> tile.getFeatures().stream())
+                        .mapToInt(TileFeature::getShieldCount)
+                        .sum()
+        );
     }
 
     @Test

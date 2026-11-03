@@ -9,7 +9,15 @@ const MEEPLE_COORDS = {
   [MeeplePosition.EAST]: { cx: 82, cy: 50 },
   [MeeplePosition.SOUTH]: { cx: 50, cy: 82 },
   [MeeplePosition.WEST]: { cx: 18, cy: 50 },
-  [MeeplePosition.CENTER]: { cx: 50, cy: 50 }
+  [MeeplePosition.CENTER]: { cx: 50, cy: 50 },
+  NORTH_LEFT: { cx: 34, cy: 22 },
+  NORTH_RIGHT: { cx: 66, cy: 22 },
+  EAST_LEFT: { cx: 78, cy: 34 },
+  EAST_RIGHT: { cx: 78, cy: 66 },
+  SOUTH_LEFT: { cx: 66, cy: 78 },
+  SOUTH_RIGHT: { cx: 34, cy: 78 },
+  WEST_LEFT: { cx: 22, cy: 66 },
+  WEST_RIGHT: { cx: 22, cy: 34 }
 };
 
 const DIRS = [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST];
@@ -53,30 +61,34 @@ function rotatePoint([x, y], angle) {
   return [50 + dx * Math.cos(r) - dy * Math.sin(r), 50 + dx * Math.sin(r) + dy * Math.cos(r)];
 }
 
-/** Trechos de estrada da peça; o último campo diz se as estradas se encontram no centro. */
-function roadPaths(edges) {
-  const n = edges[Direction.NORTH] === 'ROAD';
-  const e = edges[Direction.EAST] === 'ROAD';
-  const s = edges[Direction.SOUTH] === 'ROAD';
-  const w = edges[Direction.WEST] === 'ROAD';
-  const count = [n, e, s, w].filter(Boolean).length;
-
-  if (count === 2) {
-    if (e && w) return { paths: ['M 0,50 L 100,50'], junction: false };
-    if (n && s) return { paths: ['M 50,0 L 50,100'], junction: false };
-    if (e && s) return { paths: ['M 100,50 Q 50,50 50,100'], junction: false };
-    if (s && w) return { paths: ['M 50,100 Q 50,50 0,50'], junction: false };
-    if (w && n) return { paths: ['M 0,50 Q 50,50 50,0'], junction: false };
-    if (n && e) return { paths: ['M 50,0 Q 50,50 100,50'], junction: false };
-  }
-
-  // Bifurcações, cruzamentos ou estrada que termina no centro
+/** Trechos de estrada preservando quais lados pertencem à mesma feature. */
+function roadPaths(roads = []) {
   const paths = [];
-  if (n) paths.push('M 50,0 L 50,50');
-  if (e) paths.push('M 50,50 L 100,50');
-  if (s) paths.push('M 50,50 L 50,100');
-  if (w) paths.push('M 0,50 L 50,50');
-  return { paths, junction: paths.length > 0 };
+  const pathForPair = (a, b) => {
+    const has = d => a === d || b === d;
+    if (has(Direction.EAST) && has(Direction.WEST)) return 'M 0,50 L 100,50';
+    if (has(Direction.NORTH) && has(Direction.SOUTH)) return 'M 50,0 L 50,100';
+    if (has(Direction.EAST) && has(Direction.SOUTH)) return 'M 100,50 Q 50,50 50,100';
+    if (has(Direction.SOUTH) && has(Direction.WEST)) return 'M 50,100 Q 50,50 0,50';
+    if (has(Direction.WEST) && has(Direction.NORTH)) return 'M 0,50 Q 50,50 50,0';
+    return 'M 50,0 Q 50,50 100,50';
+  };
+  const arm = {
+    NORTH: 'M 50,0 L 50,50',
+    EAST: 'M 50,50 L 100,50',
+    SOUTH: 'M 50,50 L 50,100',
+    WEST: 'M 0,50 L 50,50'
+  };
+
+  roads.forEach(road => {
+    if (road.sides.length === 2) paths.push(pathForPair(road.sides[0], road.sides[1]));
+    else road.sides.forEach(side => paths.push(arm[side]));
+  });
+
+  return {
+    paths,
+    junction: roads.filter(road => road.sides.length === 1).length >= 3
+  };
 }
 
 const MEEPLE_BODY = 'M 35,36 C 30,36 18,48 16,56 C 14,64 26,66 30,58 L 36,50 L 32,88 C 32,94 44,94 46,88 L 50,68 L 54,88 C 56,94 68,94 68,88 L 64,50 L 70,58 C 74,66 86,64 84,56 C 82,48 70,36 65,36 Z';
@@ -155,7 +167,6 @@ export function TileSvg({
     });
   }
 
-  const edges = tile.edges || {};
   const hasMonastery = tile.hasMonastery;
   const meeples = tile.meeples || [];
 
@@ -205,30 +216,33 @@ export function TileSvg({
   });
 
   // 3. Estradas: borda, leito e faixa tracejada
-  const { paths, junction } = roadPaths(edges);
+  const { paths, junction } = roadPaths(tile.roads || []);
   paths.forEach((d, i) => {
     svgChildren.push(React.createElement('path', {
       key: `road-edge-${i}`, d, stroke: TILE_COLORS.roadEdge, strokeWidth: 18, fill: 'none'
     }));
   });
-  if (junction) {
-    svgChildren.push(React.createElement('circle', { key: 'r-center-edge', cx: 50, cy: 50, r: 12, fill: TILE_COLORS.roadEdge }));
-  }
   paths.forEach((d, i) => {
     svgChildren.push(React.createElement('path', {
       key: `road-${i}`, d, stroke: TILE_COLORS.road, strokeWidth: 14, fill: 'none'
     }));
   });
-  if (junction) {
-    svgChildren.push(React.createElement('circle', { key: 'r-center', cx: 50, cy: 50, r: 10, fill: TILE_COLORS.road }));
-  }
   paths.forEach((d, i) => {
     svgChildren.push(React.createElement('path', {
       key: `road-dash-${i}`, d, stroke: TILE_COLORS.roadLine, strokeWidth: 2, strokeDasharray: '6 6', fill: 'none'
     }));
   });
   if (junction) {
-    svgChildren.push(React.createElement('circle', { key: 'r-center-p', cx: 50, cy: 50, r: 4, fill: TILE_COLORS.roadLine }));
+    svgChildren.push(
+      React.createElement('circle', {
+        key: 'road-village', cx: 50, cy: 50, r: 12,
+        fill: TILE_COLORS.monasteryRoof, stroke: TILE_COLORS.cityWall, strokeWidth: 3
+      }),
+      React.createElement('path', {
+        key: 'road-village-roof', d: 'M 40,51 L 50,42 L 60,51 Z',
+        fill: TILE_COLORS.monasteryWall, stroke: TILE_COLORS.cityWall, strokeWidth: 1.5
+      })
+    );
   }
 
   // 4. Mosteiro (se houver)
