@@ -166,6 +166,29 @@ class GameInitializationTest {
         assertThrows(IllegalArgumentException.class, () -> engine.startGame(null));
     }
 
+    @Test
+    @DisplayName("Deve rejeitar nomes inválidos ou repetidos e cor nula")
+    void testRejectInvalidPlayerData() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class, () -> engine.startGame(List.of(
+                        new PlayerSetup(null, PlayerColor.RED),
+                        new PlayerSetup("Bob", PlayerColor.BLUE)
+                ))),
+                () -> assertThrows(IllegalArgumentException.class, () -> engine.startGame(List.of(
+                        new PlayerSetup("   ", PlayerColor.RED),
+                        new PlayerSetup("Bob", PlayerColor.BLUE)
+                ))),
+                () -> assertThrows(IllegalArgumentException.class, () -> engine.startGame(List.of(
+                        new PlayerSetup(" Alice ", PlayerColor.RED),
+                        new PlayerSetup("alice", PlayerColor.BLUE)
+                ))),
+                () -> assertThrows(IllegalArgumentException.class, () -> engine.startGame(List.of(
+                        new PlayerSetup("Alice", null),
+                        new PlayerSetup("Bob", PlayerColor.BLUE)
+                )))
+        );
+    }
+
     private List<PlayerSetup> createSetups(int count) {
         PlayerColor[] colors = PlayerColor.values();
         return java.util.stream.IntStream.range(0, count)

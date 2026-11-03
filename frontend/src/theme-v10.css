@@ -1,0 +1,303 @@
+/* Carcassonne UI v10
+   Goal: closer to the approved medieval/rustic reference.
+   Scope: interface only. Meeples, tile art, game rules and handlers stay untouched.
+   Can be loaded on top of style.css and, if present, on top of theme-v9.css. */
+:root{
+  --v10-wood-dark:#2a150c;
+  --v10-wood:#4a2714;
+  --v10-wood-mid:#6d3d21;
+  --v10-gold:#c99a4d;
+  --v10-gold-soft:#e6c785;
+  --v10-paper:#edd8af;
+  --v10-paper-soft:#f7e7c5;
+  --v10-ink:#402617;
+  --v10-shadow:0 5px 18px rgba(31,15,7,.28);
+  --v10-ornament:url('./assets/v10/divider-ornament.svg');
+}
+body{background:#1c0f08;}
+.app-root{background:#1d1009;}
+
+/* Header closer to the reference: framed wood, central plaque, ornament and stronger typography. */
+.app-navbar{
+  position:relative;
+  min-height:74px;
+  height:74px;
+  padding:0 18px 0 20px;
+  background:
+    linear-gradient(180deg,rgba(255,214,150,.08),rgba(0,0,0,0) 28%,rgba(0,0,0,.26) 100%),
+    url('./assets/v10/title-plaque.svg') center 11px/540px 52px no-repeat,
+    url('./assets/v10/wood-panel.svg');
+  background-size:auto,540px 52px,auto;
+  border-top:3px solid #bb8b46;
+  border-bottom:3px solid #b88843;
+  box-shadow:inset 0 1px #e2bb79,inset 0 -3px #241109,0 5px 16px rgba(14,6,4,.45);
+}
+.app-navbar::before,
+.app-navbar::after{
+  content:'';position:absolute;top:7px;bottom:7px;width:150px;pointer-events:none;opacity:.95;
+}
+.app-navbar::before{left:375px;background:url('./assets/v10/divider-ornament.svg') center/140px auto no-repeat;opacity:.55}
+.app-navbar::after{left:calc(50% - 90px);top:6px;bottom:auto;height:18px;background:url('./assets/v10/divider-ornament.svg') center/180px auto no-repeat;opacity:.5}
+.nav-brand{position:relative;z-index:1;gap:12px;align-items:center;}
+.brand-icon{font-size:28px;filter:sepia(.35) drop-shadow(1px 2px 0 #120804)}
+.brand-title{
+  font-family:'Cinzel Decorative','Cinzel',Georgia,serif;
+  color:#f0c774;
+  font-size:clamp(22px,2.1vw,31px);
+  font-weight:900;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  text-shadow:0 2px 0 #2a140b,0 -1px 0 #a97740,0 0 10px rgba(0,0,0,.25);
+}
+.brand-subtitle{
+  margin-left:8px;
+  font-family:'Cinzel',Georgia,serif;
+  font-size:11px;
+  letter-spacing:.11em;
+  color:#efcb88;
+  text-transform:uppercase;
+  padding:8px 16px 7px;
+  background:linear-gradient(180deg,#5a3019,#31180d);
+  border:1px solid #bb8b47;
+  box-shadow:inset 0 0 0 1px #29140b,inset 0 1px #8d6138;
+  border-radius:2px;
+}
+.nav-actions{position:relative;z-index:1}
+.nav-actions .btn-outline,
+.nav-actions .btn{
+  border-radius:4px;
+  padding:10px 16px;
+  font-family:'Cinzel',Georgia,serif;
+  font-weight:800;
+}
+
+/* Board frame like an illustrated parchment mounted on wood. */
+.board-area{
+  position:relative;isolation:isolate;
+  background:
+    url('./assets/v10/board-corner.svg') 16px 62px/140px 140px no-repeat,
+    url('./assets/v10/board-corner.svg') calc(100% - 16px) calc(100% - 16px)/140px 140px no-repeat,
+    url('./assets/v10/castle-engraving.svg') 18px calc(100% - 10px)/210px auto no-repeat,
+    url('./assets/v10/windmill-engraving.svg') calc(100% - 16px) calc(100% - 6px)/218px auto no-repeat,
+    url('./assets/v10/parchment.webp');
+  background-color:#e3cba3;
+  border:7px solid #8f6738;
+  border-image:linear-gradient(180deg,#d2af72,#7f542f) 1;
+  box-shadow:inset 0 0 0 2px #fff0c3,inset 0 0 0 8px rgba(124,85,39,.35),inset 0 0 48px rgba(109,70,34,.14),0 5px 18px rgba(29,12,6,.2);
+}
+.board-area::before{content:'';position:absolute;inset:10px;border:1px solid rgba(128,86,43,.45);box-shadow:inset 0 0 0 3px rgba(247,231,188,.38);pointer-events:none;z-index:0}
+.board-wrapper,.board-scroll-container,.board-canvas,.board-viewport{position:relative;z-index:1}
+.board-header-bar{
+  min-height:54px;
+  padding:8px 18px;
+  background:linear-gradient(180deg,rgba(252,241,216,.9),rgba(226,194,141,.94)),url('./assets/v10/parchment-panel.svg') center/100% 100% no-repeat;
+  border-bottom:2px solid #b1854f;
+  box-shadow:0 3px 10px rgba(101,70,35,.22),inset 0 1px rgba(255,248,231,.9);
+}
+.board-stats .badge,
+.board-stats .badge-action{
+  font-family:'Cinzel',Georgia,serif;
+  font-size:13px;
+  border-radius:14px;
+  padding:8px 14px;
+  background:linear-gradient(180deg,#5b331b,#31180d);
+  border:1px solid #b48645;
+  box-shadow:inset 0 1px #966843,0 2px 4px rgba(22,10,6,.25);
+}
+.board-stats .badge-action{color:#ffd46d}
+.board-tools .btn-outline,
+.board-tools .btn{
+  font-family:'Cinzel',Georgia,serif;
+  color:#4a2a14;
+  border:1px solid #9e7040;
+  background:linear-gradient(180deg,#fbe8c4,#dcb888);
+  box-shadow:inset 0 1px #fff4da,0 2px 4px rgba(90,60,27,.18);
+}
+.empty-grid-slot{background:rgba(166,139,94,.04);border:1px solid rgba(124,96,58,.18)}
+.valid-slot{
+  border:2px dashed #6f4a24;
+  background:rgba(235,195,102,.25);
+  box-shadow:inset 0 0 12px rgba(118,83,38,.18);
+}
+.valid-slot:hover{background:rgba(236,192,82,.38);border-color:#6b4120}
+.valid-plus-icon{color:#6a4425}
+
+/* Shared button treatment */
+.btn,.rotation-option,.btn-count{
+  font-family:'Cinzel',Georgia,serif;
+  font-weight:800;
+  border-radius:4px;
+}
+.btn-primary{
+  color:#3d220d;
+  text-shadow:0 1px #ffe9aa;
+  border:1px solid #8c581f;
+  background:linear-gradient(180deg,#ffe08e 0%,#efc55c 38%,#c48c2d 100%);
+  box-shadow:inset 0 1px #fff2bf,inset 0 -2px #8b561b,0 3px 6px rgba(33,15,8,.28);
+}
+.btn-primary:hover:not(:disabled){background:linear-gradient(180deg,#ffe8a2,#f0ca67 40%,#bf842b);transform:translateY(-1px)}
+.btn-outline,.btn-secondary{
+  color:#f4dfbd;
+  border:1px solid #a4703b;
+  background:linear-gradient(180deg,#6a4027,#3a2215);
+  box-shadow:inset 0 1px #9b6d45,0 2px 4px rgba(28,13,8,.35);
+}
+.btn-outline:hover:not(:disabled),.btn-secondary:hover:not(:disabled){color:#fff0d1;border-color:#d8aa61;background:linear-gradient(180deg,#7a4d31,#462819)}
+
+/* Sidebar is now a framed carved board with inner sections. */
+.sidebar-area{
+  position:relative;
+  width:372px;
+  padding:14px 14px 18px;
+  gap:14px;
+  border-left:5px solid #b4874a;
+  background:
+    url('./assets/v10/sidebar-filigree.svg') left 22px/76px 164px no-repeat,
+    url('./assets/v10/sidebar-filigree.svg') right 22px/76px 164px no-repeat,
+    url('./assets/v10/wood-panel.svg');
+  box-shadow:inset 4px 0 2px rgba(28,12,6,.9),inset -4px 0 2px rgba(28,12,6,.9),-5px 0 14px rgba(37,19,10,.45);
+}
+.sidebar-area::before{content:'';position:absolute;inset:8px;border:2px solid rgba(203,157,85,.6);box-shadow:inset 0 0 0 1px rgba(58,29,16,.9),inset 0 0 0 4px rgba(157,111,58,.35);pointer-events:none}
+.card{
+  position:relative;
+  border-radius:8px;
+  padding:15px 14px 16px;
+  background:
+    linear-gradient(145deg,rgba(101,64,40,.38),transparent 34%,rgba(24,11,7,.18)),
+    url('./assets/v10/wood-panel.svg');
+  border:3px solid #8e6332;
+  box-shadow:inset 0 0 0 2px #25130b,inset 0 0 0 5px rgba(163,113,58,.45),0 6px 12px rgba(20,8,5,.45);
+}
+.turn-panel.card{padding-top:14px}
+.turn-header{
+  position:relative;
+  display:grid;
+  grid-template-columns:1fr 82px;
+  align-items:start;
+  gap:10px;
+  padding:11px 10px 9px;
+  background:url('./assets/v10/parchment-panel.svg') center/100% 100% no-repeat;
+  min-height:96px;
+  border:none;box-shadow:none;border-radius:0;
+}
+.player-indicator{position:relative;border-left:none;padding:4px 0 0 4px}
+.turn-label{
+  display:inline-block;
+  min-width:122px;
+  margin:-4px 0 8px -2px;
+  padding:8px 24px 9px 14px;
+  font-family:'Cinzel',Georgia,serif;
+  font-size:10px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;
+  color:#f6dfb7;text-shadow:0 1px #4a130c;
+  background:url('./assets/v10/ribbon-red.svg') left center/100% 100% no-repeat;
+  filter:drop-shadow(0 2px 2px rgba(59,18,10,.15));
+}
+.player-name-current{
+  display:inline-block;
+  margin:0;padding:8px 18px 10px 12px;
+  background:linear-gradient(180deg,#f3e2bb,#e4be88);
+  clip-path:polygon(0 0,94% 0,100% 52%,94% 100%,0 100%,3% 50%);
+  border:1px solid #a1713b;
+  box-shadow:inset 0 1px rgba(255,248,230,.8),0 2px 3px rgba(80,45,20,.15);
+  font-family:'Cinzel Decorative','Cinzel',Georgia,serif;
+  font-size:19px;font-weight:900; color:#235523; text-shadow:0 1px #ffefd2;
+}
+.deck-counter{
+  align-self:start;justify-self:end;
+  min-width:76px;min-height:86px;
+  padding:14px 10px 18px;
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
+  color:#f0d49a;
+  background:url('./assets/v10/shield-badge.svg') center/100% 100% no-repeat;
+  border:none;border-radius:0;box-shadow:none;
+}
+.deck-number{font-family:'Cinzel Decorative','Cinzel',Georgia,serif;font-size:34px;line-height:1;color:#f7c868;text-shadow:0 2px #221108}
+.deck-label{font-family:'Cinzel',Georgia,serif;font-size:10px;line-height:1.1;text-transform:uppercase;letter-spacing:.06em;text-align:center;color:#eed9aa;margin-top:6px}
+
+.drawn-tile-preview{
+  padding:9px;
+  border-radius:8px;
+  border:2px solid #a16e25;
+  background:linear-gradient(135deg,#f7d983,#8e551a 60%,#d2a251);
+  box-shadow:inset 0 0 0 2px rgba(255,240,184,.55),0 6px 10px rgba(15,8,5,.35);
+}
+.rotation-badge{
+  border-radius:16px;border:2px solid #8b5d26;background:linear-gradient(180deg,#fff0c3,#d3a159);box-shadow:0 1px 3px rgba(20,9,4,.35);padding:4px 7px;font-family:'Cinzel',Georgia,serif;font-weight:800;color:#4a2a14;
+}
+.tile-info{
+  width:100%;padding:10px 12px 12px;
+  background:url('./assets/v10/parchment-panel.svg') center/100% 100% no-repeat;
+  border:none;box-shadow:none;border-radius:0;
+}
+.tile-name,.panel-title{
+  position:relative;
+  margin:0 0 8px;
+  padding:8px 14px 11px;
+  color:#f4d08a;
+  font-family:'Cinzel Decorative','Cinzel',Georgia,serif;
+  font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;
+  text-shadow:0 2px #201006;
+  background:url('./assets/v10/section-plaque.svg') center/100% 100% no-repeat;
+}
+.tile-name{font-size:14px;padding:10px 16px 10px;background-size:100% 44px;background-position:center top;border-bottom:none}
+.tile-help-text{color:#52361e;line-height:1.45;font-size:12px;padding:0 4px}
+.turn-panel > .tile-help-text{color:#e5d1ac}
+.options-label{font-family:'Cinzel',Georgia,serif;color:#eed9aa;font-size:13px;font-weight:800}
+.rotate-buttons{gap:9px}
+.rotation-option{min-height:47px;border:1px solid #a17745;color:#ead0a0;background:linear-gradient(180deg,#4d2f1e,#321c12);box-shadow:inset 0 1px #866143,0 2px #1b0e0a}
+.rotation-option.active{border-color:#f3c56b;background:linear-gradient(180deg,#f9d77e,#c58b2a);color:#35220d;text-shadow:0 1px #ffe6a9;box-shadow:inset 0 1px #ffe5a2,0 2px #52300d}
+
+/* Scoreboard tickets. MeepleIcon stays untouched. */
+.players-list{gap:8px}
+.player-card,.podium-row{
+  border:1px solid #9c733f;
+  border-left-width:5px;
+  border-radius:5px;
+  padding:10px 10px;
+  background:linear-gradient(180deg,rgba(249,238,214,.93),rgba(228,197,146,.98));
+  box-shadow:inset 0 1px rgba(255,247,224,.8),inset 0 0 0 2px rgba(243,216,165,.75),0 2px 4px rgba(27,11,7,.22);
+}
+.player-card.player-active{border-color:#c6953f;background:linear-gradient(180deg,#fff0c9,#e2bc77);box-shadow:inset 0 0 0 2px #ffefc0,0 0 0 1px #c99142,0 3px 10px rgba(180,126,57,.45)}
+.player-name{font-family:'Cinzel',Georgia,serif;font-size:16px;font-weight:900;color:#362319}
+.player-subtext{color:#6a482a;font-size:11px;font-weight:700}
+.current-badge{background:linear-gradient(#e9c263,#ad6d2d);color:#35200f;font-family:'Cinzel',Georgia,serif;font-size:9px;border:1px solid #946022;border-radius:10px;padding:3px 8px}
+.score-number{color:#583318;font-size:20px;text-shadow:0 1px #fff5d9}
+.score-unit{color:#745336;font-size:11px}
+
+/* Forms / modals */
+.modal-backdrop{background:rgba(18,9,6,.82);backdrop-filter:blur(4px)}
+.modal-card{
+  background:linear-gradient(145deg,rgba(100,63,36,.3),transparent 36%),url('./assets/v10/wood-panel.svg');
+  border:4px solid #b98b4e;border-radius:9px;box-shadow:inset 0 0 0 2px #1a0c06,inset 0 0 0 6px rgba(136,94,46,.45),0 18px 40px rgba(16,7,5,.84)
+}
+.modal-title{font-family:'Cinzel Decorative','Cinzel',Georgia,serif;color:#f3ce83}
+.modal-subtitle,.rules-content,.winner-announcement,.form-label{color:#edd6b2}
+.player-setup-row,.podium-row{color:#352314;background:linear-gradient(180deg,#ecd2a2,#d1ac7a);border:1px solid #947041;border-radius:4px}
+.input-text,.input-select{background:#f1dbb2;border:1px solid #936e43;color:#3d2818}
+.btn-count.active{color:#37210b}
+.turn-banner{border-radius:5px;background:linear-gradient(rgba(81,48,28,.86),rgba(39,23,15,.92)),url('./assets/v10/wood-panel.svg');border:2px ridge var(--player-color);text-shadow:0 2px 2px #150b07}
+
+/* Ensure meeples remain untouched. */
+/* No overrides for .player-avatar-box svg, .meeple-icon, TileSvg or Tile images. */
+
+@media (max-width:1100px){
+  .sidebar-area{width:340px;padding:12px}
+  .brand-title{font-size:24px}
+  .brand-subtitle{display:none}
+  .app-navbar::before,.app-navbar::after{display:none}
+}
+@media (max-width:900px){
+  .app-navbar{min-height:64px;height:64px;background-size:auto,430px 44px,auto}
+  .sidebar-area{width:100%;max-height:47vh;border-left:none;border-top:5px solid #b4874a}
+  .board-area{background-size:110px 110px,110px 110px,165px auto,175px auto,410px 410px}
+}
+@media (max-width:480px){
+  .app-navbar{padding:0 10px}
+  .brand-title{font-size:18px}
+  .brand-icon{font-size:20px}
+  .nav-actions{gap:5px}
+  .nav-actions .btn{padding:7px 8px;font-size:11px}
+  .board-header-bar{padding:6px 8px}
+  .board-header-bar .btn{padding:6px 7px;font-size:11px}
+  .sidebar-area{padding:10px}
+}

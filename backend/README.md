@@ -92,7 +92,7 @@ Todas as `GameActionException` são erros de regra: o frontend deve mapeá-las p
 | `Position` | `x`, `y` — **NORTH = y+1**, EAST = x+1 |
 | `Rotation` | `DEG_0`, `DEG_90`, `DEG_180`, `DEG_270` (sentido **horário**) |
 | `Placement` | `position`, `rotation` |
-| `Tile` | `features: List<TileFeature>` |
+| `Tile` | `id`, `features: List<TileFeature>` |
 | `TileFeature` | `id`, `type` (CITY/ROAD/MONASTERY/FIELD), `shieldCount`, `edgeContacts` |
 | `EdgeContact` | `side` (NORTH/EAST/SOUTH/WEST), `lane` (LEFT/CENTER/RIGHT) — lados **sem rotação** (da peça original) |
 | `PlacedTile` | `tile`, `placement` (construtor `PlacedTile(Tile, Placement)`; getters de posição e rotação delegados a `Placement`) |
@@ -103,7 +103,7 @@ Todas as `GameActionException` são erros de regra: o frontend deve mapeá-las p
 
 ### Notas para renderizar o tabuleiro
 - Rotacione a imagem da peça em `rotation` graus no sentido horário. Um lado local `s` aparece em `s.rotate(rotation)`.
-- `Tile` não tem identificador/tipo de imagem. O frontend precisará de um `tileId`/`type` (ex.: letras A–X de `StandardTiles`) para escolher o sprite — **ainda não existe**.
+- `Tile.id` é exposto como `tileId` nos DTOs para o frontend escolher o sprite correspondente.
 - `Board.getTiles()` devolve todas as peças; o tabuleiro é esparso e cresce em qualquer direção (coordenadas negativas são válidas).
 - Meeple: use `FeatureRef` para posicionar o marcador na peça (a posição visual dentro da peça é responsabilidade do frontend).
 
@@ -117,6 +117,8 @@ Todas as `GameActionException` são erros de regra: o frontend deve mapeá-las p
 | Regiões conectadas por BFS e detecção de conclusão | `FeatureConnectivity` |
 | Maioria e empate de meeples (RN09) | `ScoringRules` |
 | Pontuação ao completar (RN07) e retorno de meeples (RN08) | `ScoringRules` + `Game.applyAwards` |
+| Pontuação final de estruturas incompletas e campos | `Game.scoreEndGame` + `*ScoringStrategy` |
+| Vencedor ou vencedores empatados | `Game.winners` |
 
 Pontuação ao completar: **estrada** = 1/peça · **cidade** = 2/peça + 2/escudo · **mosteiro** = 9.
 
@@ -139,7 +141,7 @@ Pontuação ao completar: **estrada** = 1/peça · **cidade** = 2/peça + 2/escu
 - [x] **CORS** e tratamento global de exceções (`@RestControllerAdvice`) para `GameActionException`.
 - [x] **Identificador de peça** (`tileId`) nas 72 peças padrão.
 - [ ] **Estado compartilhado:** `GameEngine` é um singleton Spring com **uma única partida** (campo `game`). Para várias partidas simultâneas é preciso um repositório por id.
-- [ ] **Fim de jogo completo:** `finishGame()` só marca `FINISHED`. Faltam `scoreEndGame`, `endGameAwards`, `winners` (RF31–RF34, RF47) e a pontuação de campos.
+- [x] **Fim de jogo completo:** `finishGame()` aplica `scoreEndGame()` antes de marcar `FINISHED`; inclui estruturas incompletas, campos e consulta aos vencedores empatados por `winners()`.
 - [ ] Os dados de `StandardTiles` descrevem poucas lanes por borda; a conectividade de campos pode exigir ajustes.
 
 ## Testes

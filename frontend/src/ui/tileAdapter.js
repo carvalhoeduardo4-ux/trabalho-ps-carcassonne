@@ -47,6 +47,7 @@ export function toRenderTile(features = [], rotation = 'DEG_0') {
     edges,
     cities,
     roads,
+    artRotation: rotation,
     hasMonastery: features.some(f => f.type === 'MONASTERY')
   };
 }

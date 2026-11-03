@@ -1,5 +1,6 @@
 import React from 'react';
-import { Direction, MeeplePosition, TILE_COLORS } from '../ui/constants.js';
+import { MeeplePosition } from '../ui/constants.js';
+import { illustratedTileUri } from '../ui/illustratedTileArt.js';
 
 /**
  * Coordenadas para renderizar os meeples em cada segmento (grid 100x100)
@@ -19,77 +20,6 @@ const MEEPLE_COORDS = {
   WEST_LEFT: { cx: 22, cy: 66 },
   WEST_RIGHT: { cx: 22, cy: 34 }
 };
-
-const DIRS = [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST];
-const SIDE_ANGLE = { NORTH: 0, EAST: 90, SOUTH: 180, WEST: 270 };
-
-/** Formas de cidade com a cidade voltada para o norte; a rotação é aplicada depois. */
-const CITY_SHAPES = {
-  one: 'M 15,0 C 25,35 75,35 85,0 Z',                                         // só o lado N
-  corner: 'M 35,0 L 100,0 L 100,65 C 65,65 35,35 35,0 Z',                      // N + E
-  opposite: 'M 0,0 L 100,0 C 65,35 65,65 100,100 L 0,100 C 35,65 35,35 0,0 Z', // N + S
-  three: 'M 0,0 L 100,0 L 100,100 C 70,65 30,65 0,100 Z',                      // N + E + W
-  full: 'M 0,0 L 100,0 L 100,100 L 0,100 Z'                                    // 4 lados
-};
-
-/** Onde o brasão fica em cada forma (antes da rotação). */
-const SHIELD_POS = { one: [50, 12], corner: [76, 24], opposite: [50, 22], three: [50, 30], full: [50, 30] };
-
-/** Escolhe a forma e o ângulo de rotação para uma cidade com estes lados. */
-function cityShape(sides) {
-  const has = (d) => sides.includes(d);
-  if (sides.length === 4) return { shape: 'full', angle: 0 };
-  if (sides.length === 3) {
-    const missing = DIRS.find(d => !has(d));
-    return { shape: 'three', angle: (SIDE_ANGLE[missing] + 180) % 360 };
-  }
-  if (sides.length === 2) {
-    const opposite = Math.abs(DIRS.indexOf(sides[0]) - DIRS.indexOf(sides[1])) === 2;
-    if (opposite) return { shape: 'opposite', angle: has(Direction.NORTH) ? 0 : 90 };
-    // lado do canto que vem primeiro no sentido horário (N+E -> N, E+S -> E, ...)
-    const first = DIRS.find(d => has(d) && has(DIRS[(DIRS.indexOf(d) + 1) % 4]));
-    return { shape: 'corner', angle: SIDE_ANGLE[first] };
-  }
-  return { shape: 'one', angle: SIDE_ANGLE[sides[0]] };
-}
-
-/** Gira um ponto em torno do centro da peça (mesma convenção do rotate do SVG). */
-function rotatePoint([x, y], angle) {
-  const r = (angle * Math.PI) / 180;
-  const dx = x - 50;
-  const dy = y - 50;
-  return [50 + dx * Math.cos(r) - dy * Math.sin(r), 50 + dx * Math.sin(r) + dy * Math.cos(r)];
-}
-
-/** Trechos de estrada preservando quais lados pertencem à mesma feature. */
-function roadPaths(roads = []) {
-  const paths = [];
-  const pathForPair = (a, b) => {
-    const has = d => a === d || b === d;
-    if (has(Direction.EAST) && has(Direction.WEST)) return 'M 0,50 L 100,50';
-    if (has(Direction.NORTH) && has(Direction.SOUTH)) return 'M 50,0 L 50,100';
-    if (has(Direction.EAST) && has(Direction.SOUTH)) return 'M 100,50 Q 50,50 50,100';
-    if (has(Direction.SOUTH) && has(Direction.WEST)) return 'M 50,100 Q 50,50 0,50';
-    if (has(Direction.WEST) && has(Direction.NORTH)) return 'M 0,50 Q 50,50 50,0';
-    return 'M 50,0 Q 50,50 100,50';
-  };
-  const arm = {
-    NORTH: 'M 50,0 L 50,50',
-    EAST: 'M 50,50 L 100,50',
-    SOUTH: 'M 50,50 L 50,100',
-    WEST: 'M 0,50 L 50,50'
-  };
-
-  roads.forEach(road => {
-    if (road.sides.length === 2) paths.push(pathForPair(road.sides[0], road.sides[1]));
-    else road.sides.forEach(side => paths.push(arm[side]));
-  });
-
-  return {
-    paths,
-    junction: roads.filter(road => road.sides.length === 1).length >= 3
-  };
-}
 
 const MEEPLE_BODY = 'M 35,36 C 30,36 18,48 16,56 C 14,64 26,66 30,58 L 36,50 L 32,88 C 32,94 44,94 46,88 L 50,68 L 54,88 C 56,94 68,94 68,88 L 64,50 L 70,58 C 74,66 86,64 84,56 C 82,48 70,36 65,36 Z';
 
@@ -173,123 +103,14 @@ export function TileSvg({
   // Elementos SVG para desenhar o tile
   const svgChildren = [];
 
-  // 1. Fundo do Campo
-  svgChildren.push(
-    React.createElement('rect', {
-      key: 'bg-field',
-      x: 0,
-      y: 0,
-      width: 100,
-      height: 100,
-      fill: TILE_COLORS.field,
-      rx: 8
-    })
-  );
-
-  // 2. Cidades (uma forma por cidade, girada para os lados certos)
-  (tile.cities || []).forEach((city, i) => {
-    const { shape, angle } = cityShape(city.sides);
-    svgChildren.push(
-      React.createElement('path', {
-        key: `city-${i}`,
-        d: CITY_SHAPES[shape],
-        transform: `rotate(${angle} 50 50)`,
-        fill: TILE_COLORS.city,
-        stroke: TILE_COLORS.cityWall,
-        strokeWidth: 3
-      })
-    );
-    if (city.shields > 0) {
-      // O brasão não gira junto: só a posição acompanha a cidade
-      const [sx, sy] = rotatePoint(SHIELD_POS[shape], angle);
-      svgChildren.push(
-        React.createElement('path', {
-          key: `shield-${i}`,
-          d: 'M -6,-7 L 6,-7 L 6,1 C 6,5 0,8 0,8 C 0,8 -6,5 -6,1 Z',
-          transform: `translate(${sx} ${sy})`,
-          fill: TILE_COLORS.shield,
-          stroke: '#ffffff',
-          strokeWidth: 1.5
-        })
-      );
-    }
-  });
-
-  // 3. Estradas: borda, leito e faixa tracejada
-  const { paths, junction } = roadPaths(tile.roads || []);
-  paths.forEach((d, i) => {
-    svgChildren.push(React.createElement('path', {
-      key: `road-edge-${i}`, d, stroke: TILE_COLORS.roadEdge, strokeWidth: 18, fill: 'none'
-    }));
-  });
-  paths.forEach((d, i) => {
-    svgChildren.push(React.createElement('path', {
-      key: `road-${i}`, d, stroke: TILE_COLORS.road, strokeWidth: 14, fill: 'none'
-    }));
-  });
-  paths.forEach((d, i) => {
-    svgChildren.push(React.createElement('path', {
-      key: `road-dash-${i}`, d, stroke: TILE_COLORS.roadLine, strokeWidth: 2, strokeDasharray: '6 6', fill: 'none'
-    }));
-  });
-  if (junction) {
-    svgChildren.push(
-      React.createElement('circle', {
-        key: 'road-village', cx: 50, cy: 50, r: 12,
-        fill: TILE_COLORS.monasteryRoof, stroke: TILE_COLORS.cityWall, strokeWidth: 3
-      }),
-      React.createElement('path', {
-        key: 'road-village-roof', d: 'M 40,51 L 50,42 L 60,51 Z',
-        fill: TILE_COLORS.monasteryWall, stroke: TILE_COLORS.cityWall, strokeWidth: 1.5
-      })
-    );
-  }
-
-  // 4. Mosteiro (se houver)
-  if (hasMonastery) {
-    svgChildren.push(
-      // Parede do mosteiro
-      React.createElement('rect', {
-        key: 'monastery-base',
-        x: 34,
-        y: 34,
-        width: 32,
-        height: 32,
-        fill: TILE_COLORS.monasteryWall,
-        stroke: TILE_COLORS.monasteryOutline,
-        strokeWidth: 2,
-        rx: 3
-      }),
-      // Telhado triangular
-      React.createElement('polygon', {
-        key: 'monastery-roof',
-        points: '50,22 28,38 72,38',
-        fill: TILE_COLORS.monasteryRoof,
-        stroke: TILE_COLORS.monasteryRoofEdge,
-        strokeWidth: 2
-      }),
-      // Cruz no topo
-      React.createElement('line', { key: 'cross-v', x1: 50, y1: 15, x2: 50, y2: 24, stroke: TILE_COLORS.monasteryCross, strokeWidth: 3 }),
-      React.createElement('line', { key: 'cross-h', x1: 46, y1: 18, x2: 54, y2: 18, stroke: TILE_COLORS.monasteryCross, strokeWidth: 3 }),
-      // Porta
-      React.createElement('rect', { key: 'monastery-door', x: 45, y: 52, width: 10, height: 14, fill: TILE_COLORS.monasteryDoor, rx: 2 })
-    );
-  }
-
-  // 5. Borda da peça (delicada moldura de madeira)
-  svgChildren.push(
-    React.createElement('rect', {
-      key: 'tile-border',
-      x: 0,
-      y: 0,
-      width: 100,
-      height: 100,
-      fill: 'none',
-      stroke: TILE_COLORS.fieldBorder,
-      strokeWidth: 2,
-      rx: 8
-    })
-  );
+  // CARCASSONNE_ART_V7: ilustração da topologia renderizada.
+  // Meeples e eventos permanecem no componente original.
+  svgChildren.push(React.createElement('image', {
+    key: 'tile-illustration',
+    x: 0, y: 0, width: 100, height: 100,
+    href: illustratedTileUri(tile),
+    preserveAspectRatio: 'none'
+  }));
 
   // 6. Meeples colocados (ghost = pré-visualização da escolha do jogador)
   meeples.forEach((m, i) => {

@@ -107,4 +107,27 @@ class GameControllerTest {
                 .content("{}"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("Jogador ou cor nulos devem retornar 400")
+    void testNullPlayerData() throws Exception {
+        mockMvc.perform(post("/api/game")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    { "players": [null, { "name": "Bob", "color": "BLUE" }] }
+                    """))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/game")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "players": [
+                        { "name": "Alice", "color": null },
+                        { "name": "Bob", "color": "BLUE" }
+                      ]
+                    }
+                    """))
+                .andExpect(status().isBadRequest());
+    }
 }

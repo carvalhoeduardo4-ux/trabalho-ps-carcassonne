@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
     branches: [prototipo_entrega_2]
+  push:
+    branches: [fix/carcassonne-aggregate-ci]
 
 permissions:
   contents: read
@@ -43,12 +45,15 @@ jobs:
           const importPattern = /(?:import|export)\s+(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g;
 
           for (const file of files) {
-            const syntax = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+            const source = await readFile(file, 'utf8');
+            const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], {
+              input: source,
+              encoding: 'utf8'
+            });
             if (syntax.status !== 0) {
               failures.push(`${path.relative(frontendRoot, file)}: invalid syntax\n${syntax.stderr.trim()}`);
             }
 
-            const source = await readFile(file, 'utf8');
             for (const match of source.matchAll(importPattern)) {
               const specifier = match[1];
               if (!specifier.startsWith('.')) continue;

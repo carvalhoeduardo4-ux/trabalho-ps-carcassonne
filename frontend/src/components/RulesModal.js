@@ -25,11 +25,14 @@ export function RulesModal({ onClose }) {
         React.createElement('li', null, 'Estrada fechada: 1 ponto por peça.'),
         React.createElement('li', null, 'Cidade fechada: 2 pontos por peça e 2 pontos por brasão (escudo azul).'),
         React.createElement('li', null, 'Mosteiro concluído (8 peças em volta): 9 pontos.'),
-        React.createElement('li', null, 'Ao fechar a estrutura, quem tiver mais meeples nela leva os pontos (empatados pontuam todos) e os meeples voltam ao estoque.')
+        React.createElement('li', null, 'Ao fechar a estrutura, quem tiver mais meeples nela leva os pontos; em caso de empate pela maioria, todos os empatados recebem a pontuação completa. Depois, os meeples voltam ao estoque.'),
+        React.createElement('li', null, 'No fim do jogo, estradas incompletas valem 1 ponto por peça; cidades incompletas valem 1 ponto por peça e por brasão.'),
+        React.createElement('li', null, 'Mosteiros incompletos valem 1 ponto pela peça do mosteiro e 1 por peça ao redor.'),
+        React.createElement('li', null, 'Campos valem 3 pontos por cidade concluída distinta adjacente, seguindo a mesma regra de maioria e empate.')
       ),
 
       React.createElement('h3', null, '5. Fim de jogo'),
-      React.createElement('p', null, 'A partida termina quando o monte acaba. Vence quem tiver mais pontos.')
+      React.createElement('p', null, 'A partida termina quando o monte acaba. Vence quem tiver mais pontos; se houver empate na pontuação final, todos os líderes vencem.')
     ),
     React.createElement('div', { className: 'modal-actions' },
       React.createElement('button', { type: 'button', className: 'btn btn-primary', onClick: onClose }, 'Entendido!')

@@ -22,6 +22,7 @@ import com.carcassonne.domain.rules.ScoringRules;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -239,6 +240,27 @@ public class Game {
                         "Jogador não pode ser nulo."
                 );
             }
+            if (player.getName() == null || player.getName().trim().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Nome do jogador não pode ser nulo ou vazio."
+                );
+            }
+            if (player.getColor() == null) {
+                throw new IllegalArgumentException(
+                        "Cor do jogador não pode ser nula."
+                );
+            }
+        }
+
+        long distinctNames = players.stream()
+                .map(player -> player.getName().trim().toLowerCase(Locale.ROOT))
+                .distinct()
+                .count();
+
+        if (distinctNames != players.size()) {
+            throw new IllegalArgumentException(
+                    "Cada jogador deve possuir um nome distinto."
+            );
         }
 
         long distinctColors = players.stream()

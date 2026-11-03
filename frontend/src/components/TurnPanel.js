@@ -84,7 +84,7 @@ export function TurnPanel({
           title: 'Girar 90° no sentido horário'
         },
           React.createElement('span', { className: 'btn-icon', 'aria-hidden': 'true' }, '⟳'),
-          React.createElement('span', null, 'Girar 90°')
+          React.createElement('span', null, 'Girar 90° (R)')
         )
       ),
       // Rotações com a quantidade de posições válidas de cada uma

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /** Adaptador REST (porta de entrada HTTP) sobre o {@link GameEngine}. */
 @RestController
@@ -36,7 +37,16 @@ public class GameController {
         }
         List<PlayerSetup> setups = new ArrayList<>();
         for (PlayerRequest p : request.players()) {
-            setups.add(new PlayerSetup(p.name(), PlayerColor.valueOf(p.color().toUpperCase())));
+            if (p == null) {
+                throw new IllegalArgumentException("Jogador obrigatório.");
+            }
+            if (p.color() == null) {
+                throw new IllegalArgumentException("Cor do jogador obrigatória.");
+            }
+            setups.add(new PlayerSetup(
+                    p.name(),
+                    PlayerColor.valueOf(p.color().toUpperCase(Locale.ROOT))
+            ));
         }
         engine.startGame(setups);
         return state();

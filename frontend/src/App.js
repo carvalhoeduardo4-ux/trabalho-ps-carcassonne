@@ -197,6 +197,22 @@ export function App() {
     setRotation(prev => ROTATIONS[(ROTATIONS.indexOf(prev) + step + 4) % 4]);
   };
 
+  // CARCASSONNE_R_HOTKEY_V7: mesmo gesto do botão, somente na fase PLACE_TILE.
+  useEffect(() => {
+    const onRotateKey = (event) => {
+      if (event.key?.toLowerCase() !== 'r' || event.repeat ||
+          event.ctrlKey || event.altKey || event.metaKey) return;
+      const target = event.target;
+      if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName)) return;
+      if (isSettingUp || showRules || busy || !game || game.status !== 'ACTIVE' ||
+          game.phase !== TurnPhase.PLACE_TILE) return;
+      event.preventDefault();
+      setRotation(prev => ROTATIONS[(ROTATIONS.indexOf(prev) + 1) % ROTATIONS.length]);
+    };
+    window.addEventListener('keydown', onRotateKey);
+    return () => window.removeEventListener('keydown', onRotateKey);
+  }, [game?.status, game?.phase, busy, isSettingUp, showRules]);
+
   const handlePlaceTile = (x, y) => run(() => api.placeTile({ x, y, rotation }));
 
   const handleInvalidPlacement = (reason) => {
