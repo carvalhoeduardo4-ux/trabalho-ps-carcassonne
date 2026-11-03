@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import * as api from './api/gameApi.js';
-import { TurnPhase, ROTATIONS, colorById } from './ui/constants.js';
+import { TurnPhase, ROTATIONS, colorById, isAiPlayer } from './ui/constants.js';
+import { useAiTurn } from './ai/useAiTurn.js';
 import { toRenderTile } from './ui/tileAdapter.js';
 import { GameBoard } from './components/GameBoard.js';
 import { TurnPanel } from './components/TurnPanel.js';
@@ -102,7 +103,8 @@ export function App() {
     const prev = gameRef.current;
     if (s.status === 'ACTIVE' && (!prev || prev.currentPlayerIndex !== s.currentPlayerIndex)) {
       const p = s.players[s.currentPlayerIndex];
-      setTurnNotice({ id: Date.now(), name: p.name, color: colorById(p.color).hex });
+      const name = isAiPlayer(p) ? `${p.name} (IA)` : p.name;
+      setTurnNotice({ id: Date.now(), name, color: colorById(p.color).hex });
     }
     // A peça recém-colocada continua destacada até a próxima jogada
     if (s.placedTile) setLastPlacedKey(`${s.placedTile.x},${s.placedTile.y}`);
@@ -115,15 +117,22 @@ export function App() {
 
   const inFlight = useRef(false);
 
+  /**
+   * Executa uma ação no backend e aplica o estado devolvido.
+   * Devolve true (sucesso), false (erro, já exibido ao usuário) ou null
+   * (ignorada porque outra ação estava em andamento).
+   */
   const run = async (action) => {
-    if (inFlight.current) return; // ignora cliques repetidos enquanto uma ação está em andamento
+    if (inFlight.current) return null; // ignora cliques repetidos enquanto uma ação está em andamento
     inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
       await settle(await action());
+      return true;
     } catch (e) {
-      setError(friendlyError(e.message));
+      if (!e.cancelled) setError(friendlyError(e.message)); // jogada da IA cancelada não é erro
+      return false;
     } finally {
       inFlight.current = false;
       setBusy(false);
@@ -173,6 +182,16 @@ export function App() {
   );
   const currentPlayer = players[game ? game.currentPlayerIndex : 0];
 
+  // Jogadores controlados pelo computador jogam sozinhos; pausam com modais abertos
+  const ai = useAiTurn({
+    game,
+    enabled: !isSettingUp && !showRules,
+    run,
+    resync: () => run(() => api.getState()),
+    setRotation,
+    setMeeplePreview
+  });
+
   // Posições válidas apenas para a rotação escolhida localmente
   const validPlacements = useMemo(
     () => (game ? game.placements.filter(p => p.rotation === rotation) : []),
@@ -187,6 +206,7 @@ export function App() {
 
   const handleStartNewGame = (playerConfigs) => {
     setIsSettingUp(false);
+    ai.reset();
     setLastPlacedKey(null);
     setGameOverDismissed(false);
     gameRef.current = null;
@@ -197,16 +217,26 @@ export function App() {
     setRotation(prev => ROTATIONS[(ROTATIONS.indexOf(prev) + step + 4) % 4]);
   };
 
-  const handlePlaceTile = (x, y) => run(() => api.placeTile({ x, y, rotation }));
+  // Na vez da IA o humano não joga (defesa extra além dos controles desabilitados)
+  const handlePlaceTile = (x, y) => {
+    if (ai.aiTurn) return;
+    run(() => api.placeTile({ x, y, rotation }));
+  };
 
   const handleInvalidPlacement = (reason) => {
-    if (reason === 'occupied') return; // a célula treme; um aviso aqui só atrapalharia
+    if (ai.aiTurn || reason === 'occupied') return; // a célula treme; um aviso aqui só atrapalharia
     setError(INVALID_PLACEMENT_MESSAGES[reason] || 'Posição inválida para esta peça.');
   };
 
-  const handlePlaceMeeple = (option) => run(() => api.placeMeeple(option));
+  const handlePlaceMeeple = (option) => {
+    if (ai.aiTurn) return;
+    run(() => api.placeMeeple(option));
+  };
 
-  const handleSkipMeeple = () => run(() => api.skipMeeple());
+  const handleSkipMeeple = () => {
+    if (ai.aiTurn) return;
+    run(() => api.skipMeeple());
+  };
 
   /** Tela exibida quando não há partida carregada. */
   const renderSplash = () => {
@@ -336,7 +366,9 @@ export function App() {
           currentPlayerIndex: game.currentPlayerIndex,
           showCoords: showCoords,
           onToggleCoords: () => setShowCoords(v => !v),
-          turnNotice: turnNotice
+          turnNotice: turnNotice,
+          readOnly: ai.aiTurn,
+          aiTarget: ai.aiTarget
         })
       ),
 
@@ -353,7 +385,10 @@ export function App() {
           onPreviewMeeple: setMeeplePreview,
           onShowResult: () => setGameOverDismissed(false),
           currentPlayer: currentPlayer,
-          busy: busy
+          busy: busy,
+          aiTurn: ai.aiTurn,
+          aiFailed: ai.failed,
+          onAiRetry: ai.retry
         }),
         React.createElement(ScoreBoard, {
           players: players,

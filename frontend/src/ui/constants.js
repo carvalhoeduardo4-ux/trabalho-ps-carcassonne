@@ -28,6 +28,21 @@ export const ROTATIONS = ['DEG_0', 'DEG_90', 'DEG_180', 'DEG_270'];
 
 export const rotationDegrees = (rotation) => ROTATIONS.indexOf(rotation) * 90;
 
+/** Quem controla o jogador (`type` do backend). Ausente = humano. */
+export const PlayerType = {
+  HUMAN: 'HUMAN',
+  AI: 'AI'
+};
+
+export const isAiPlayer = (player) => !!player && player.type === PlayerType.AI;
+
+/** Ritmo da IA: espera antes de decidir e tempo mostrando a jogada antes de aplicá-la. */
+export const AI_THINK_MS = 900;
+export const AI_PREVIEW_MS = 700;
+
+/** Falhas seguidas antes de a IA parar e pedir ação do usuário. */
+export const AI_MAX_RETRIES = 3;
+
 /** `id` é o nome de `PlayerColor` no backend. */
 export const PLAYER_COLORS = [
   { id: 'RED', name: 'Vermelho', hex: '#ef4444', bgHex: '#fee2e2', textHex: '#991b1b' },
