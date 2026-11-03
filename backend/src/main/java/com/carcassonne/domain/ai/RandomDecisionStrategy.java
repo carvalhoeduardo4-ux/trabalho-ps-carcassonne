@@ -3,6 +3,7 @@ package com.carcassonne.domain.ai;
 import com.carcassonne.domain.board.FeatureRef;
 import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.board.Position;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class RandomDecisionStrategy implements AiDecisionStrategy {
 
     private final RandomGenerator random;
 
+    @Autowired
     public RandomDecisionStrategy() {
         this(new Random());
     }

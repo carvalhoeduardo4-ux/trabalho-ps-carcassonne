@@ -1,6 +1,8 @@
 package com.carcassonne.api;
 
 import com.carcassonne.api.dto.GameDtos.AiDecisionDto;
+import com.carcassonne.api.dto.GameDtos.FeatureRefDto;
+import com.carcassonne.api.dto.GameDtos.PlacementDto;
 import com.carcassonne.application.port.in.AiInputPort;
 import com.carcassonne.domain.ai.AiDecision;
 import com.carcassonne.domain.board.FeatureRef;
@@ -28,20 +30,17 @@ public class AiController {
     @GetMapping("/decision")
     public AiDecisionDto decision() {
         AiDecision decision = ai.decideForCurrentPlayer();
+        return new AiDecisionDto(
+                decision.getAction().name(),
+                decision.getPlacement().map(this::placementDto).orElse(null),
+                decision.getFeature().map(this::featureDto).orElse(null));
+    }
 
-        return switch (decision.getAction()) {
-            case PLACE_TILE -> {
-                Placement p = decision.getPlacement().orElseThrow();
-                yield new AiDecisionDto("PLACE_TILE", p.getPosition().getX(), p.getPosition().getY(),
-                        p.getRotation().name(), null);
-            }
-            case PLACE_MEEPLE -> {
-                FeatureRef f = decision.getFeature().orElseThrow();
-                yield new AiDecisionDto("PLACE_MEEPLE", f.getPosition().getX(), f.getPosition().getY(),
-                        null, f.getFeatureId());
-            }
-            case SKIP_MEEPLE -> new AiDecisionDto("SKIP_MEEPLE", null, null, null, null);
-            case DRAW_TILE -> new AiDecisionDto("DRAW_TILE", null, null, null, null);
-        };
+    private PlacementDto placementDto(Placement p) {
+        return new PlacementDto(p.getPosition().getX(), p.getPosition().getY(), p.getRotation().name());
+    }
+
+    private FeatureRefDto featureDto(FeatureRef f) {
+        return new FeatureRefDto(f.getPosition().getX(), f.getPosition().getY(), f.getFeatureId());
     }
 }

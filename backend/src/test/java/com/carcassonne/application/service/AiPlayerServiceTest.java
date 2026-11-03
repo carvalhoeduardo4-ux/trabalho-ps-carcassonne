@@ -3,12 +3,14 @@ package com.carcassonne.application.service;
 import com.carcassonne.application.port.in.PlayerSetup;
 import com.carcassonne.domain.ai.AiAction;
 import com.carcassonne.domain.ai.AiDecision;
+import com.carcassonne.domain.ai.AiDecisionException;
 import com.carcassonne.domain.ai.AiDecisionStrategy;
 import com.carcassonne.domain.ai.RandomDecisionStrategy;
 import com.carcassonne.domain.board.FeatureRef;
 import com.carcassonne.domain.board.Placement;
 import com.carcassonne.domain.board.Position;
 import com.carcassonne.domain.exception.InvalidTurnPhaseException;
+import com.carcassonne.domain.exception.NotAiPlayerTurnException;
 import com.carcassonne.domain.game.GameStatus;
 import com.carcassonne.domain.player.PlayerColor;
 import com.carcassonne.domain.player.PlayerType;
@@ -84,7 +86,7 @@ class AiPlayerServiceTest {
         GameEngine engine = newEngine();
         engine.startGame(players(PlayerType.HUMAN, PlayerType.AI));
 
-        assertThrows(InvalidTurnPhaseException.class, () -> aiFor(engine).decideForCurrentPlayer());
+        assertThrows(NotAiPlayerTurnException.class, () -> aiFor(engine).decideForCurrentPlayer());
     }
 
     @Test
@@ -169,7 +171,7 @@ class AiPlayerServiceTest {
 
         AiPlayerService ai = new AiPlayerService(engine, broken);
 
-        assertThrows(IllegalStateException.class, ai::decideForCurrentPlayer);
+        assertThrows(AiDecisionException.class, ai::decideForCurrentPlayer);
     }
 
     @Test

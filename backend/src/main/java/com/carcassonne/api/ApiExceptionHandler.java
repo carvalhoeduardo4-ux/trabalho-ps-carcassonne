@@ -1,6 +1,7 @@
 package com.carcassonne.api;
 
 import com.carcassonne.api.dto.GameDtos.ErrorDto;
+import com.carcassonne.domain.ai.AiDecisionException;
 import com.carcassonne.domain.exception.GameActionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorDto> handleState(IllegalStateException e) {
         return build(HttpStatus.CONFLICT, e);
+    }
+
+    @ExceptionHandler(AiDecisionException.class)
+    public ResponseEntity<ErrorDto> handleAiDefect(AiDecisionException e) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, e);
     }
 
     private ResponseEntity<ErrorDto> build(HttpStatus status, Exception e) {

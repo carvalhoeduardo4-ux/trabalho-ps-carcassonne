@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -71,7 +72,8 @@ class AiControllerTest {
             """);
 
         mockMvc.perform(get("/api/game/ai/decision"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("NotAiPlayerTurnException"));
     }
 
     @Test
@@ -84,7 +86,9 @@ class AiControllerTest {
 
         mockMvc.perform(get("/api/game/ai/decision"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.action").value("DRAW_TILE"));
+                .andExpect(jsonPath("$.action").value("DRAW_TILE"))
+                .andExpect(jsonPath("$.placement").value(nullValue()))
+                .andExpect(jsonPath("$.feature").value(nullValue()));
 
         mockMvc.perform(post("/api/game/draw"))
                 .andExpect(status().isOk())
@@ -97,9 +101,10 @@ class AiControllerTest {
                         .andReturn().getResponse().getContentAsString()
         );
 
-        int x = tileDecision.getInt("x");
-        int y = tileDecision.getInt("y");
-        String rotation = tileDecision.getString("rotation");
+        JSONObject placement = tileDecision.getJSONObject("placement");
+        int x = placement.getInt("x");
+        int y = placement.getInt("y");
+        String rotation = placement.getString("rotation");
 
         JSONArray placements = new JSONObject(
                 mockMvc.perform(get("/api/game")).andReturn().getResponse().getContentAsString()
@@ -131,9 +136,7 @@ class AiControllerTest {
         if ("PLACE_MEEPLE".equals(meepleDecision.getString("action"))) {
             mockMvc.perform(post("/api/game/meeple")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(String.format("{ \"x\": %d, \"y\": %d, \"featureId\": %d }",
-                                    meepleDecision.getInt("x"), meepleDecision.getInt("y"),
-                                    meepleDecision.getInt("featureId"))))
+                            .content(meepleDecision.getJSONObject("feature").toString()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.currentPlayerIndex").value(1));
         } else {

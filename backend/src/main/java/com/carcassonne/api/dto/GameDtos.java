@@ -33,7 +33,7 @@ public final class GameDtos {
 
     public record PlayerDto(String name, String color, int score, int availableMeeples, String type) {}
 
-    public record AiDecisionDto(String action, Integer x, Integer y, String rotation, Integer featureId) {}
+    public record AiDecisionDto(String action, PlacementDto placement, FeatureRefDto feature) {}
 
     public record GameStateDto(
             String status,

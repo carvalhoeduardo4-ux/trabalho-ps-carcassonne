@@ -6,6 +6,7 @@ import com.carcassonne.domain.board.Placement;
 import java.util.List;
 import java.util.Optional;
 
+/** Strategy. */
 public interface AiDecisionStrategy {
 
     Placement choosePlacement(List<Placement> legal);
