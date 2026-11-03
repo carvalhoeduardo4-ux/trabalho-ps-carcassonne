@@ -20,12 +20,13 @@ Com JDK 25 é preciso: `-Dlombok.version=1.18.46 -Dmaven.compiler.proc=full` (o 
 ```
 com.carcassonne
 ├── application
-│   ├── port/in      GameInputPort, PlayerSetup   (porta de entrada hexagonal)
-│   └── service      GameEngine                   (controller; orquestra o turno)
+│   ├── port/in      GameInputPort, AiInputPort, PlayerSetup (portas de entrada hexagonais)
+│   └── service      GameEngine (controller; orquestra o turno), AiPlayerService (decisão da IA)
 └── domain
+    ├── ai           AiDecisionStrategy (Strategy), RandomDecisionStrategy, AiDecision, AiAction
     ├── board        Board, PlacedTile, Position, Placement, FeatureRef, FeatureRegion
     ├── game         Game (aggregate root), Turn + TurnState (State pattern), GameStatus
-    ├── player       Player, PlayerColor, MeeplePlacement
+    ├── player       Player, PlayerColor, PlayerType (HUMAN/AI), MeeplePlacement
     ├── rules        TilePlacementRules, MeeplePlacementRules, ScoringRules,
     │                FeatureConnectivity, *ScoringStrategy, ScoreAward
     ├── tile         Tile, TileFeature, EdgeContact, Direction, EdgeLane, Rotation,
@@ -89,7 +90,7 @@ Todas as `GameActionException` são erros de regra: o frontend deve mapeá-las p
 | `PlacedTile` | `tile`, `position`, `rotation` |
 | `FeatureRef` | `position`, `featureId` — identifica uma feature numa peça posicionada |
 | `MeeplePlacement` | `player`, `feature` (`FeatureRef`) |
-| `Player` | `name`, `color`, `score` |
+| `Player` | `name`, `color`, `type` (HUMAN/AI), `score` |
 | `PlayerColor` | RED, BLUE, GREEN, YELLOW, BLACK |
 
 ### Notas para renderizar o tabuleiro
@@ -123,6 +124,22 @@ Pontuação ao completar: **estrada** = 1/peça · **cidade** = 2/peça + 2/escu
 | `GET` | `/api/game/meeples` | Lista opções de meeple elegíveis |
 | `POST` | `/api/game/meeple` | Aloca meeple na peça (`MeepleRequest`) |
 | `POST` | `/api/game/skip` | Pula meeple e resolve o turno |
+| `GET` | `/api/game/ai/decision` | Jogada sorteada para o jogador atual, se for IA (`AiDecisionDto`). Não altera o estado. 409 na vez de um humano ou com a partida encerrada |
+
+`PlayerRequest` aceita o campo opcional `type` (`HUMAN` padrão, ou `AI`); valor inválido retorna 400. `PlayerDto` expõe `type`.
+
+### Jogador controlado pelo computador (IA aleatória)
+
+Na vez de um jogador `AI`, o cliente chama `GET /api/game/ai/decision` e aplica a resposta pelo endpoint correspondente:
+
+| `action` | Campos | Aplicar com |
+|---|---|---|
+| `DRAW_TILE` | — | `POST /api/game/draw` |
+| `PLACE_TILE` | `x`, `y`, `rotation` | `POST /api/game/tile` |
+| `PLACE_MEEPLE` | `x`, `y`, `featureId` | `POST /api/game/meeple` |
+| `SKIP_MEEPLE` | — | `POST /api/game/skip` |
+
+A escolha é sempre feita entre as opções legais da fase. Detalhes em `../docs/ia/funcionamento_ia.md`.
 
 ## Pendências e Próximos Passos
 
@@ -138,3 +155,6 @@ Pontuação ao completar: **estrada** = 1/peça · **cidade** = 2/peça + 2/escu
 `backend/src/test/java/.../application/service/`:
 - `GameInitializationTest` — criação da partida.
 - `GameTurnFlowTest` — rotação/bordas, ordem das fases, colocação inválida e partida completa até esgotar o monte.
+- `AiPlayerServiceTest` — decisões da IA por fase, rejeições (sem partida, vez de humano, estratégia ilegal) e partida completa entre duas IAs.
+
+Outros: `domain/ai/RandomDecisionStrategyTest` (sorteio, cenário de rotação, justiça entre posições) e `api/AiControllerTest` (endpoint da IA e campo `type`).

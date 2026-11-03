@@ -7,7 +7,7 @@ public final class GameDtos {
 
     private GameDtos() {}
 
-    public record PlayerRequest(String name, String color) {}
+    public record PlayerRequest(String name, String color, String type) {}
 
     public record StartGameRequest(List<PlayerRequest> players) {}
 
@@ -31,7 +31,9 @@ public final class GameDtos {
 
     public record MeepleDto(int playerIndex, String color, int x, int y, int featureId) {}
 
-    public record PlayerDto(String name, String color, int score, int availableMeeples) {}
+    public record PlayerDto(String name, String color, int score, int availableMeeples, String type) {}
+
+    public record AiDecisionDto(String action, Integer x, Integer y, String rotation, Integer featureId) {}
 
     public record GameStateDto(
             String status,

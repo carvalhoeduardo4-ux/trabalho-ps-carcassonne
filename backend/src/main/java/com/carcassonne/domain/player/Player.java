@@ -7,18 +7,26 @@ public class Player {
 
     private final String name;
     private final PlayerColor color;
+    private final PlayerType type;
     private int score;
 
     public Player(String name, PlayerColor color) {
-        this.name = name;
-        this.color = color;
-        this.score = 0;
+        this(name, color, 0, PlayerType.HUMAN);
     }
 
     public Player(String name, PlayerColor color, int score) {
+        this(name, color, score, PlayerType.HUMAN);
+    }
+
+    public Player(String name, PlayerColor color, PlayerType type) {
+        this(name, color, 0, type);
+    }
+
+    private Player(String name, PlayerColor color, int score, PlayerType type) {
         this.name = name;
         this.color = color;
         this.score = score;
+        this.type = type != null ? type : PlayerType.HUMAN;
     }
 
     public String getName() {
@@ -27,6 +35,14 @@ public class Player {
 
     public PlayerColor getColor() {
         return color;
+    }
+
+    public PlayerType getType() {
+        return type;
+    }
+
+    public boolean isAi() {
+        return type == PlayerType.AI;
     }
 
     public int getScore() {
@@ -52,6 +68,6 @@ public class Player {
 
     @Override
     public String toString() {
-        return "Player(" + name + ", " + color + ", score=" + score + ")";
+        return "Player(" + name + ", " + color + ", " + type + ", score=" + score + ")";
     }
 }
